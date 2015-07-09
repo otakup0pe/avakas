@@ -65,8 +65,16 @@ def write_git(repo, directory, vsn_str, opt):
         version = vsn_str
         vsn_str = str(version)
 
+    if opt.tag_prefix:
+        tag = "%s%s" % (opt.tag_prefix, vsn_str)
+    else:
+        tag = vsn_str
+
     if opt.dry:
         print("Would have pushed %s to %s." % (vsn_str, opt.remote))
+        if not version.build:
+            print("Would have tagged as %s." % tag)
+
         return
 
     if flav != 'ansible':
@@ -80,10 +88,6 @@ def write_git(repo, directory, vsn_str, opt):
         git_push(repo, opt)
 
     if not version.build:
-        if opt.tag_prefix:
-            tag = "%s%s" % (opt.tag_prefix, vsn_str)
-        else:
-            tag = vsn_str
 
         repo.create_tag(tag)
         git_push(repo, opt)
@@ -223,12 +227,12 @@ def main():
     if operation == 'bump':
         repo = load_git(directory, opt)
         bump = 'dev'
-        if len(sys.argv) == 4:
-            if sys.argv[3].lower() == 'patch' or \
-               sys.argv[3].lower() == 'minor' or \
-               sys.argv[3].lower() == 'major' or \
-               sys.argv[3].lower() == 'dev':
-                bump = sys.argv[3].lower()
+        if len(args) >= 3:
+            if args[2].lower() == 'patch' or \
+               args[2].lower() == 'minor' or \
+               args[2].lower() == 'major' or \
+               args[2].lower() == 'dev':
+                bump = args[2].lower()
         version = bump_version(repo, directory, bump)
         write_git(repo, directory, version, opt)
         exit(0)
