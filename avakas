@@ -85,7 +85,7 @@ def write_git(repo, directory, vsn_str, opt):
         else:
             tag = vsn_str
 
-        repo.create_tag(tag, vsn_str)
+        repo.create_tag(tag)
         git_push(repo, opt)
 
 def load_git(directory, opt):
