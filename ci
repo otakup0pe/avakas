@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-pip install -r requirements.txt -r requirements-dev.txt
-pep8 avakas
-pylint avakas
-nosetests
+CIDIR=$(cd ${0%/*} && pwd)
+
+pip install -r "${CIDIR}/requirements.txt" -r "${CIDIR}/requirements-dev.txt"
+pep8 "${CIDIR}/avakas"
+pylint --rcfile "${CIDIR}/.pylintrc" "${CIDIR}/avakas"

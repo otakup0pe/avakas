@@ -1,6 +1,8 @@
 avakas
 ======
 
+[![Build Status](https://travis-ci.org/otakup0pe/avakas.svg?branch=master)](https://travis-ci.org/otakup0pe/avakas)
+
 # Overview
 
 This script provides a simple interface around viewing and manipulating project version metadata. It may be used to either bump, set, or view the version information for the project in a given directory. It is written with [semantic versioning](http://semver.org/) in mind.

@@ -1,0 +1,8 @@
+[MASTER]
+ignore=.svn
+ignore=.git
+ignore=.hg
+
+[MESSAGES CONTROL]
+# C0325 - parentheses around print will be mandatory in python3
+disable=C0325
