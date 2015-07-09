@@ -215,7 +215,7 @@ def main():
 
     (opt, args) = parser.parse_args()
     operation = args[0]
-    directory = args[1]
+    directory = os.path.abspath(args[1])
 
     if not os.path.exists(directory):
         problems("Directory %s does not exist." % directory)        
