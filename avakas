@@ -1,21 +1,37 @@
 #!/usr/bin/env python
+"""avakas
 
-import sys, os, re, json
+The avakas tool is meant as an interface around version
+metadata for assorted flavours of software projects.
+
+For more information see https://github.com/otakup0pe/avakas
+"""
+
+import sys
+import os
+import re
+import json
 from optparse import OptionParser
 from semantic_version import Version
 from git import Repo
 
+
 def usage():
+    """Display usage syntax."""
     print "avakas show <directory>"
     print "avakas bump <directory> [dev|patch|minor|major]"
     print "avakas set <directory> <version>"
     exit(1)
 
+
 def problems(msg):
+    """Simple give-up and error out function."""
     print("Problem: %s" % msg)
     exit(1)
 
+
 def determine_flavor(directory):
+    """Determines the project flavour for the given directory."""
     if os.path.exists("%s/package.json" % directory):
         return 'node'
     elif os.path.exists("%s/meta/main.yml" % directory):
@@ -23,41 +39,49 @@ def determine_flavor(directory):
     else:
         return 'plain'
 
+
 def read_package_json(directory):
+    """Reads the version from package.json."""
     package_file = "%s/package.json" % directory
     if not os.path.exists(package_file):
         problems("The %s file is missing" % package_file)
-    f = open(package_file, 'r')
-    package_json = json.load(f)
-    f.close()
+    package_handle = open(package_file, 'r')
+    package_json = json.load(package_handle)
+    package_handle.close()
     return package_json
 
-def write_package_json(directory, package_json):
-    package_file = "%s/package.json" % directory
-    f = open(package_file, 'w')
-    json.dump(package_json, f, indent=4, separators=(',', ': '), sort_keys=True)
-    f.close()
 
-def write_plain(file_name, version):
-    f = open(file_name, 'w')
-    f.write("%s\n" % str(version))
-    f.close()
-    
 def write_plain_version(directory, version):
+    """Writes the version to a plain text file."""
     version_file = "%s/version" % directory
-    write_plain(version_file, version)
+    plain_handle = open(version_file, 'w')
+    plain_handle.write("%s\n" % str(version))
+    plain_handle.close()
+
 
 def write_node_version(directory, version):
+    """Writes the version to package.json."""
     package_json = read_package_json(directory)
     package_json['version'] = str(version)
-    write_package_json(directory, package_json)
+    package_file = "%s/package.json" % directory
+    package_handle = open(package_file, 'w')
+    json.dump(package_json,
+              package_handle,
+              indent=4,
+              separators=(',', ': '),
+              sort_keys=True)
+    package_handle.close()
+
 
 def git_push(repo, opt):
+    """Pushes the repository to our remote."""
     info = repo.remotes[opt.remote].push()[0]
     if info.flags & 1024 or info.flags & 32 or info.flags & 16:
         problems("Unexpected git error: %s" % info.summary)
 
+
 def write_git(repo, directory, vsn_str, opt):
+    """Will commit and push the version file and optionally tags."""
     flav = determine_flavor(directory)
     if isinstance(vsn_str, str):
         version = Version(vsn_str)
@@ -92,7 +116,9 @@ def write_git(repo, directory, vsn_str, opt):
         repo.create_tag(tag)
         git_push(repo, opt)
 
+
 def load_git(directory, opt):
+    """Initializes our local git workspace."""
     repo = get_repo(directory)
     if not repo:
         problems("Unable to find associated git repo for %s." % directory)
@@ -100,7 +126,7 @@ def load_git(directory, opt):
     if repo.is_dirty():
         problems("Git repo dirty.")
 
-    if not opt.branch in repo.heads:
+    if opt.branch not in repo.heads:
         problems("Branch %s branch not found." % opt.branch)
 
     if repo.active_branch != repo.heads[opt.branch]:
@@ -108,11 +134,13 @@ def load_git(directory, opt):
         repo.heads[opt.branch].checkout()
     else:
         print("Already on %s branch" % opt.branch)
-    
+
     repo.remotes[opt.remote].pull()
     return repo
 
+
 def transmogrify_version(repo, version, bump):
+    """Update the version string."""
     if bump == 'patch':
         return version.next_patch()
     elif bump == 'minor':
@@ -125,40 +153,48 @@ def transmogrify_version(repo, version, bump):
                                 version.patch,
                                 extract_dev_revision(repo, version))
 
+
 def get_repo(directory):
+    """Load the git repository."""
     return Repo(directory, search_parent_directories=True)
 
+
 def extract_dev_revision(repo, version):
+    """Determine the version string for dev builds."""
     current_git = str(repo.head.commit)[0:8]
     if version.build:
         build_version = version.build[0]
-        m = re.match('([a-f0-9]+)\-(\d+)', build_version)
-        if not m:
+        match = re.match(r'([a-f0-9]+)\-(\d+)', build_version)
+        if not match:
             problems("Invalid dev-vsn string %s" % build_version)
 
-        if m.group(1) == current_git:
-            return "%s-%d" % ( current_git, int(m.group(2)) + 1 )
+        if match.group(1) == current_git:
+            return "%s-%d" % (current_git, int(match.group(2)) + 1)
 
     return "%s-1" % current_git
-    
+
+
 def extract_node_version(directory):
-    package_file = "%s/package.json" % directory
+    """Extract just the version from a nodejs project."""
     package_json = read_package_json(directory)
     version = package_json['version']
     return Version(version)
 
+
 def extract_plain_version(directory):
+    """Extract just the version from a generic project."""
     version_file = "%s/version" % directory
     if not os.path.exists(version_file):
         problems("The version file %s is missing" % version_file)
 
-    f = open(version_file, 'r')
-    version = f.read()
-    f.close()
+    version_handle = open(version_file, 'r')
+    version = version_handle.read()
+    version_handle.close()
     return Version(version)
 
-def bump_version(repo, directory, bump):
 
+def bump_version(repo, directory, bump):
+    """Bump the flavour specific version for a project."""
     flavor = determine_flavor(directory)
 
     if flavor == 'node':
@@ -176,21 +212,25 @@ def bump_version(repo, directory, bump):
     print("Version updated from %s to %s" % (artifact_version, new_version))
     return new_version
 
-def set_version(directory, v):
+
+def set_version(directory, version):
+    """Manually set the flavour specific version for a project."""
     try:
-        version = Version(v)
+        version = Version(version)
     except ValueError:
-        problems("Invalid version string %s" % v)
+        problems("Invalid version string %s" % version)
 
     flavor = determine_flavor(directory)
     if flavor == 'node':
         write_node_version(directory, version)
     else:
         write_plain_version(directory, version)
-    
+
     print("Version set to %s" % version)
 
+
 def show_version(directory):
+    """Show the current flavour specific version for a project."""
     flavor = determine_flavor(directory)
     if flavor == 'node':
         artifact_version = extract_node_version(directory)
@@ -198,7 +238,9 @@ def show_version(directory):
         artifact_version = extract_plain_version(directory)
     print("%s" % str(artifact_version))
 
+
 def main():
+    """Dat entrypoint"""
     parser = OptionParser()
     parser.add_option('--dry-run',
                       dest='dry',
@@ -222,8 +264,8 @@ def main():
     directory = os.path.abspath(args[1])
 
     if not os.path.exists(directory):
-        problems("Directory %s does not exist." % directory)        
-    
+        problems("Directory %s does not exist." % directory)
+
     if operation == 'bump':
         repo = load_git(directory, opt)
         bump = 'dev'
