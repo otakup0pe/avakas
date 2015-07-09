@@ -64,3 +64,7 @@ This prefix will be added to the version string when creating a git tag.
 # Author
 
 The avakas tool was created by Jonathan Freedman.
+
+# Disclaimer
+
+Consider this software as alpha. It's worth mentioning that I've broken git repositories a few times with pygit. I'll remove this disclaimer once I'm a little more comfortable with those interactions.
