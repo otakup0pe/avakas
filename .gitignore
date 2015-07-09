@@ -1,0 +1,6 @@
+.DS_Store
+build
+dist
+avakas.egg-info
+*.pyc
+*.pyo

@@ -1,0 +1,252 @@
+#!/usr/bin/env python
+
+import sys, os, re, json
+from optparse import OptionParser
+from semantic_version import Version
+from git import Repo
+
+def usage():
+    print "avakas show <directory>"
+    print "avakas bump <directory> [dev|patch|minor|major]"
+    print "avakas set <directory> <version>"
+    exit(1)
+
+def problems(msg):
+    print("Problem: %s" % msg)
+    exit(1)
+
+def determine_flavor(directory):
+    if os.path.exists("%s/package.json" % directory):
+        return 'node'
+    elif os.path.exists("%s/meta/main.yml" % directory):
+        return 'ansible'
+    else:
+        return 'plain'
+
+def read_package_json(directory):
+    package_file = "%s/package.json" % directory
+    if not os.path.exists(package_file):
+        problems("The %s file is missing" % package_file)
+    f = open(package_file, 'r')
+    package_json = json.load(f)
+    f.close()
+    return package_json
+
+def write_package_json(directory, package_json):
+    package_file = "%s/package.json" % directory
+    f = open(package_file, 'w')
+    json.dump(package_json, f, indent=4, separators=(',', ': '), sort_keys=True)
+    f.close()
+
+def write_plain(file_name, version):
+    f = open(file_name, 'w')
+    f.write("%s\n" % str(version))
+    f.close()
+    
+def write_plain_version(directory, version):
+    version_file = "%s/version" % directory
+    write_plain(version_file, version)
+
+def write_node_version(directory, version):
+    package_json = read_package_json(directory)
+    package_json['version'] = str(version)
+    write_package_json(directory, package_json)
+
+def git_push(repo, opt):
+    info = repo.remotes[opt.remote].push()[0]
+    if info.flags & 1024 or info.flags & 32 or info.flags & 16:
+        problems("Unexpected git error: %s" % info.summary)
+
+def write_git(repo, directory, vsn_str, opt):
+    flav = determine_flavor(directory)
+    if isinstance(vsn_str, str):
+        version = Version(vsn_str)
+    else:
+        version = vsn_str
+        vsn_str = str(version)
+
+    if opt.dry:
+        print("Would have pushed %s to %s." % (vsn_str, opt.remote))
+        return
+
+    if flav != 'ansible':
+        if flav == 'node':
+            vsn_file = "%s/package.json" % directory
+        else:
+            vsn_file = "%s/version" % directory
+
+        repo.index.add([vsn_file])
+        repo.index.commit("Version bumped to %s" % vsn_str)
+        git_push(repo, opt)
+
+    if not version.build:
+        if opt.tag_prefix:
+            tag = "%s%s" % (opt.tag_prefix, vsn_str)
+        else:
+            tag = vsn_str
+
+        repo.create_tag(tag, vsn_str)
+        git_push(repo, opt)
+
+def load_git(directory, opt):
+    repo = get_repo(directory)
+    if not repo:
+        problems("Unable to find associated git repo for %s." % directory)
+
+    if repo.is_dirty():
+        problems("Git repo dirty.")
+
+    if not opt.branch in repo.heads:
+        problems("Branch %s branch not found." % opt.branch)
+
+    if repo.active_branch != repo.heads[opt.branch]:
+        print("Switching to %s branch" % opt.branch)
+        repo.heads[opt.branch].checkout()
+    else:
+        print("Already on %s branch" % opt.branch)
+    
+    repo.remotes[opt.remote].pull()
+    return repo
+
+def transmogrify_version(repo, version, bump):
+    if bump == 'patch':
+        return version.next_patch()
+    elif bump == 'minor':
+        return version.next_minor()
+    elif bump == 'major':
+        return version.next_major()
+    else:
+        return "%s.%s.%s+%s" % (version.major,
+                                version.minor,
+                                version.patch,
+                                extract_dev_revision(repo, version))
+
+def get_repo(directory):
+    return Repo(directory, search_parent_directories=True)
+
+def extract_dev_revision(repo, version):
+    current_git = str(repo.head.commit)[0:8]
+    if version.build:
+        build_version = version.build[0]
+        m = re.match('([a-f0-9]+)\-(\d+)', build_version)
+        if not m:
+            problems("Invalid dev-vsn string %s" % build_version)
+
+        if m.group(1) == current_git:
+            return "%s-%d" % ( current_git, int(m.group(2)) + 1 )
+
+    return "%s-1" % current_git
+    
+def extract_node_version(directory):
+    package_file = "%s/package.json" % directory
+    package_json = read_package_json(directory)
+    version = package_json['version']
+    return Version(version)
+
+def extract_plain_version(directory):
+    version_file = "%s/version" % directory
+    if not os.path.exists(version_file):
+        problems("The version file %s is missing" % version_file)
+
+    f = open(version_file, 'r')
+    version = f.read()
+    f.close()
+    return Version(version)
+
+def bump_version(repo, directory, bump):
+
+    flavor = determine_flavor(directory)
+
+    if flavor == 'node':
+        artifact_version = extract_node_version(directory)
+    else:
+        artifact_version = extract_plain_version(directory)
+
+    new_version = transmogrify_version(repo, artifact_version, bump)
+
+    if flavor == 'node':
+        write_node_version(directory, new_version)
+    else:
+        write_plain_version(directory, new_version)
+
+    print("Version updated from %s to %s" % (artifact_version, new_version))
+    return new_version
+
+def set_version(directory, v):
+    try:
+        version = Version(v)
+    except ValueError:
+        problems("Invalid version string %s" % v)
+
+    flavor = determine_flavor(directory)
+    if flavor == 'node':
+        write_node_version(directory, version)
+    else:
+        write_plain_version(directory, version)
+    
+    print("Version set to %s" % version)
+
+def show_version(directory):
+    flavor = determine_flavor(directory)
+    if flavor == 'node':
+        artifact_version = extract_node_version(directory)
+    else:
+        artifact_version = extract_plain_version(directory)
+    print("%s" % str(artifact_version))
+
+def main():
+    parser = OptionParser()
+    parser.add_option('--dry-run',
+                      dest='dry',
+                      help='Will not push to git',
+                      action='store_true')
+    parser.add_option('--branch',
+                      dest='branch',
+                      help='Branch to use when updating git',
+                      default='master')
+    parser.add_option('--remote',
+                      dest='remote',
+                      help='Git remote',
+                      default='origin')
+    parser.add_option('--tag-prefix',
+                      dest='tag_prefix',
+                      help='Prefix for version tag name',
+                      default=None)
+
+    (opt, args) = parser.parse_args()
+    operation = args[0]
+    directory = args[1]
+
+    if not os.path.exists(directory):
+        problems("Directory %s does not exist." % directory)        
+    
+    if operation == 'bump':
+        repo = load_git(directory, opt)
+        bump = 'dev'
+        if len(sys.argv) == 4:
+            if sys.argv[3].lower() == 'patch' or \
+               sys.argv[3].lower() == 'minor' or \
+               sys.argv[3].lower() == 'major' or \
+               sys.argv[3].lower() == 'dev':
+                bump = sys.argv[3].lower()
+        version = bump_version(repo, directory, bump)
+        write_git(repo, directory, version, opt)
+        exit(0)
+    elif operation == 'show':
+        show_version(directory)
+        exit(0)
+    elif operation == 'set':
+        repo = load_git(directory, opt)
+        if len(args) == 3:
+            version = args[2]
+            set_version(directory, version)
+            write_git(repo, directory, version, opt)
+            exit(0)
+    usage()
+
+if __name__ == "__main__":
+
+    if len(sys.argv) < 2:
+        usage()
+
+    main()
