@@ -1,2 +1,2 @@
 semantic_version
-pygit
+gitpython
