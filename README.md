@@ -15,6 +15,12 @@ The avakas tool makes a few assumptions
 * The directory is somewhere in a git repository. You can have multiple projects per repository by using the `--tag-prefix` option.
 * For the protection of the user the git workspace must not be dirty.
 
+The avakas tool supports the following types of version files
+
+* NodeJS `package.json`
+* Erlang/OTP and rebar `foo.app.src`
+* Plain ol' `version` file
+
 # Operations
 
 ## show
