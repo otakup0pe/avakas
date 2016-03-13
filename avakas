@@ -12,9 +12,9 @@ import os
 import re
 import json
 from optparse import OptionParser
+from glob import glob
 from semantic_version import Version
 from git import Repo
-from glob import glob
 from erl_terms import decode as erl_decode
 
 
@@ -25,7 +25,6 @@ def usage(parser=None):
     print "avakas set <directory> <version>"
     if parser:
         parser.print_help()
-    exit(1)
 
 
 def problems(msg):
@@ -86,7 +85,7 @@ def write_erlang_version(directory, version):
     lines = []
     updated = False
     for line in app_handle:
-        re_out = re.sub(r'(.+vsn.+")(\d+.\d+.\d+.*)(".+)', r'\1%s\3', line)
+        re_out = re.sub(r'(.+vsn.+")(.+)(".+)', r'\1%s\3', line)
         if re_out != line:
             updated = True
             lines.append(re_out % version)
@@ -100,9 +99,13 @@ def write_erlang_version(directory, version):
     app_handle.close()
 
 
-def git_push(repo, opt):
+def git_push(repo, opt, tag=None):
     """Pushes the repository to our remote."""
-    info = repo.remotes[opt.remote].push()[0]
+    if tag:
+        info = repo.remotes[opt.remote].push(tag)
+    else:
+        info = repo.remotes[opt.remote].push()
+    info = info[0]
     if info.flags & 1024 or info.flags & 32 or info.flags & 16:
         problems("Unexpected git error: %s" % info.summary)
 
@@ -128,21 +131,23 @@ def write_git(repo, directory, vsn_str, opt):
 
         return
 
+    vsn_file = None
     if flav == 'node':
         vsn_file = "%s/package.json" % directory
     elif flav == 'erlang':
         app_file = glob("%s/src/*.app.src" % directory)
         vsn_file = "%s/%s" % (directory, app_file)
-    else:
+    elif flav != 'ansible':
         vsn_file = "%s/version" % directory
 
-    repo.index.add([vsn_file])
-    repo.index.commit("Version bumped to %s" % vsn_str)
-    git_push(repo, opt)
+    if vsn_file:
+        repo.index.add([vsn_file])
+        repo.index.commit("Version bumped to %s" % vsn_str)
+        git_push(repo, opt)
 
     if not version.build:
         repo.create_tag(tag)
-        git_push(repo, opt)
+        git_push(repo, opt, tag)
 
 
 def load_git(directory, opt):
@@ -222,6 +227,27 @@ def extract_erlang_version(directory):
     problems("Something wrong with OTP app file " % app_file)
 
 
+def extract_ansible_version(repo, opt):
+    """Extract the version of an Ansible Galaxy role from git tags."""
+    raw_tags = [t.name for t in repo.tags]
+    unsorted_tags = []
+    prefix = opt.tag_prefix
+    for tag in raw_tags:
+        if prefix:
+            if tag[0:len(prefix)] == prefix:
+                unsorted_tags.append(str(Version(tag[len(prefix):])))
+        else:
+            try:
+                version = Version(tag)
+                unsorted_tags.append(str(version))
+            except ValueError:
+                continue
+
+    tags = sorted(unsorted_tags)
+    tags.reverse()
+    return Version(tags[0])
+
+
 def extract_plain_version(directory):
     """Extract just the version from a generic project."""
     version_file = "%s/version" % directory
@@ -234,7 +260,7 @@ def extract_plain_version(directory):
     return Version(version)
 
 
-def bump_version(repo, directory, bump):
+def bump_version(repo, directory, bump, opt):
     """Bump the flavour specific version for a project."""
     flavor = determine_flavor(directory)
 
@@ -242,6 +268,8 @@ def bump_version(repo, directory, bump):
         artifact_version = extract_node_version(directory)
     elif flavor == 'erlang':
         artifact_version = extract_erlang_version(directory)
+    elif flavor == 'ansible':
+        artifact_version = extract_ansible_version(repo, opt)
     else:
         artifact_version = extract_plain_version(directory)
 
@@ -270,19 +298,21 @@ def set_version(directory, version):
         write_node_version(directory, version)
     elif flavor == 'erlang':
         write_erlang_version(directory, version)
-    else:
+    elif flavor != 'ansible':
         write_plain_version(directory, version)
 
     print("Version set to %s" % version)
 
 
-def show_version(directory):
+def show_version(repo, directory, opt):
     """Show the current flavour specific version for a project."""
     flavor = determine_flavor(directory)
     if flavor == 'node':
         artifact_version = extract_node_version(directory)
     elif flavor == 'erlang':
         artifact_version = extract_erlang_version(directory)
+    elif flavor == 'ansible':
+        artifact_version = extract_ansible_version(repo, opt)
     else:
         artifact_version = extract_plain_version(directory)
     print("%s" % str(artifact_version))
@@ -310,13 +340,21 @@ def main():
 
     (opt, args) = parser.parse_args()
     operation = args[0]
+    if operation == 'help':
+        usage(parser)
+        exit(0)
+    else:
+        if len(args) < 2:
+            usage(parser)
+            exit(1)
+
     directory = os.path.abspath(args[1])
 
     if not os.path.exists(directory):
         problems("Directory %s does not exist." % directory)
 
+    repo = load_git(directory, opt)
     if operation == 'bump':
-        repo = load_git(directory, opt)
         bump = 'dev'
         if len(args) >= 3:
             if args[2].lower() == 'patch' or \
@@ -324,24 +362,25 @@ def main():
                args[2].lower() == 'major' or \
                args[2].lower() == 'dev':
                 bump = args[2].lower()
-        version = bump_version(repo, directory, bump)
+        version = bump_version(repo, directory, bump, opt)
         write_git(repo, directory, version, opt)
         exit(0)
     elif operation == 'show':
-        show_version(directory)
+        show_version(repo, directory, opt)
         exit(0)
     elif operation == 'set':
-        repo = load_git(directory, opt)
         if len(args) == 3:
             version = args[2]
             set_version(directory, version)
             write_git(repo, directory, version, opt)
             exit(0)
     usage(parser)
+    exit(1)
 
 if __name__ == "__main__":
 
     if len(sys.argv) < 2:
         usage()
+        exit(1)
 
     main()
