@@ -1,7 +1,11 @@
 # -*- mode: Shell-script;bash -*- 
 
 if [ -z "$AVAKAS_TEST_DIR" ] ; then
-    export AVAKAS_TEST_DIR="${BATS_TMPDIR}avakas-${RANDOM}"
+    AVAKAS_TEST_DIR="${BATS_TMPDIR}"
+    if [ "${AVAKAS_TEST_DIR: -1:1}" != "/" ] ; then
+        AVAKAS_TEST_DIR="${AVAKAS_TEST_DIR}/"
+    fi
+    export AVAKAS_TEST_DIR="${AVAKAS_TEST_DIR}avakas-${RANDOM}"
     mkdir -p "$AVAKAS_TEST_DIR"
 fi
 
