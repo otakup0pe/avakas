@@ -56,7 +56,7 @@ origin_repo() {
     local REPO="$1"
     cd "$REPO"
     git config --bool core.bare true
-    rm "${REPO}"/*
+    rm -rf "${REPO}"/*
 }
 
 random_rev() {
@@ -77,13 +77,49 @@ tag_repo() {
     git tag "$TAG" "$REV"
 }
 
+update_repo() {
+    local REPO="$1"
+    cd "$REPO"
+    git pull -q origin master
+}
+
 plain_version() {
     local REPO="$1"
     local VSN="$2"
     local FILE="${REPO}/version"
     echo "$VSN" > "${REPO}/version"
     cd "$REPO"
-    git add $FILE
+    git add "$FILE"
     git commit -qm "Bumping to ${VSN}" $FILE
     tag_repo "$REPO" "$VSN"
+}
+
+ansible_version() {
+    local REPO="$1"
+    local VSN="$2"
+    FILE="${REPO}/meta/main.yml"
+    mkdir "${REPO}/meta"
+    touch "$FILE"
+    cd "$REPO"
+    git add "$FILE"
+    git commit -qm "This is an important skeleton" "$FILE"
+    tag_repo "$REPO" "$VSN"
+}
+
+avakas_wrapper() {
+    "$AVAKAS" $* 2> /dev/null
+}
+
+template_skeleton() {
+    local REPO="$1"
+    local FLAVOR="$2"
+    local VSN="$3"
+    if [ "$FLAVOR" == "plain" ] ; then
+        plain_version "$REPO" "$VSN"
+    elif [ "$FLAVOR" == "ansible" ] ; then
+        ansible_version "$REPO" "$VSN"
+    else
+        echo "Invalid skeleton!"
+        exit 1
+    fi
 }
