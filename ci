@@ -25,4 +25,4 @@ pep8 "${CIDIR}/avakas"
 pylint --rcfile "${CIDIR}/.pylintrc" "${CIDIR}/avakas"
 
 # integration tests
-./.bats/bin/bats tests/integration/*.bats
+"${CIDIR}/.bats/bin/bats" tests/integration/*.bats
