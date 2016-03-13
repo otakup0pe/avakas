@@ -24,6 +24,13 @@ fake_file() {
     echo "$FILE"
 }
 
+config_repo() {
+    local REPO="$1"
+    cd "$REPO"
+    git config user.email "nobody@example.com"
+    git config user.name "some user"
+}
+
 fake_repo() {
     local REPO="${AVAKAS_TEST_DIR}/briefcase-${BATS_TEST_NAME}-${RANDOM}"
     mkdir "${REPO}"
@@ -33,6 +40,7 @@ fake_repo() {
     FILES="${FILES} $(fake_file "$REPO")"
     git add $FILES
     git commit -qm "some ${RANDOM} message" $FILES
+    git-config "$REPO"
     echo $REPO
 }
 
@@ -40,6 +48,7 @@ clone_repo() {
     local ORIGIN="$1"
     local REPO="${AVAKAS_TEST_DIR}/briefcase-${BATS_TEST_NAME}-${RANDOM}"
     git clone -q "$ORIGIN" "$REPO"
+    git-config "$REPO"
     echo $REPO
 }
 
