@@ -7,6 +7,7 @@ metadata for assorted flavours of software projects.
 For more information see https://github.com/otakup0pe/avakas
 """
 
+from __future__ import print_function
 import sys
 import os
 import re
@@ -20,16 +21,16 @@ from erl_terms import decode as erl_decode
 
 def usage(parser=None):
     """Display usage syntax."""
-    print "avakas show <directory>"
-    print "avakas bump <directory> [dev|patch|minor|major]"
-    print "avakas set <directory> <version>"
+    print("avakas show <directory>")
+    print("avakas bump <directory> [dev|patch|minor|major]")
+    print("avakas set <directory> <version>")
     if parser:
         parser.print_help()
 
 
 def problems(msg):
     """Simple give-up and error out function."""
-    print("Problem: %s" % msg)
+    print("Problem: %s" % msg, file=sys.stderr)
     exit(1)
 
 
@@ -125,9 +126,9 @@ def write_git(repo, directory, vsn_str, opt):
         tag = vsn_str
 
     if opt.dry:
-        print("Would have pushed %s to %s." % (vsn_str, opt.remote))
+        print("Would have pushed %s to %s." % (vsn_str, opt.remote), file=sys.stderr)
         if not version.build:
-            print("Would have tagged as %s." % tag)
+            print("Would have tagged as %s." % tag, file=sys.stderr)
 
         return
 
@@ -163,10 +164,13 @@ def load_git(directory, opt):
         problems("Branch %s branch not found." % opt.branch)
 
     if repo.active_branch != repo.heads[opt.branch]:
-        print("Switching to %s branch" % opt.branch)
+        print("Switching to %s branch" % opt.branch, file=sys.stderr)
         repo.heads[opt.branch].checkout()
     else:
-        print("Already on %s branch" % opt.branch)
+        print("Already on %s branch" % opt.branch, file=sys.stderr)
+
+    if opt.remote not in [r.name for r in repo.remotes]:
+        problems("Remote %s not found" % opt.remote)
 
     repo.remotes[opt.remote].pull()
     return repo

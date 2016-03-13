@@ -4,3 +4,4 @@ dist
 avakas.egg-info
 *.pyc
 *.pyo
+.bats*

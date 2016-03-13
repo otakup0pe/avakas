@@ -1,8 +1,30 @@
 #!/usr/bin/env bash
+
+# prudence above all else
 set -e
 
+# always know where your towel is
 CIDIR=$(cd ${0%/*} && pwd)
 
+# constant presence
+BATSGIT="${CIDIR}/.bats-git"
+BATSBIN="${CIDIR}/.bats"
+
+# install dependencies
 pip install -r "${CIDIR}/requirements.txt" -r "${CIDIR}/requirements-dev.txt"
+if [ ! -d "$BATSGIT" ] ; then
+    git clone https://github.com/sstephenson/bats.git "$BATSGIT"
+fi
+if [ ! -d "$BATSBIN" ] ; then
+    cd "$BATSGIT"
+    ./install.sh "$BATSBIN"
+fi
+# we can't stop here
+export PATH="${CIDIR}/.bats/bin:${PATH}"
+
+# so pretty much style guides
 pep8 "${CIDIR}/avakas"
 pylint --rcfile "${CIDIR}/.pylintrc" "${CIDIR}/avakas"
+
+# integration tests
+bats tests/integration/*.bats
