@@ -30,7 +30,8 @@ def usage(parser=None):
 
 def problems(msg):
     """Simple give-up and error out function."""
-    print("Problem: %s" % msg, file=sys.stderr)
+    print("Problem: %s" % msg,
+          file=sys.stderr)
     exit(1)
 
 
@@ -126,9 +127,11 @@ def write_git(repo, directory, vsn_str, opt):
         tag = vsn_str
 
     if opt.dry:
-        print("Would have pushed %s to %s." % (vsn_str, opt.remote), file=sys.stderr)
+        print("Would have pushed %s to %s." % (vsn_str, opt.remote),
+              file=sys.stderr)
         if not version.build:
-            print("Would have tagged as %s." % tag, file=sys.stderr)
+            print("Would have tagged as %s." % tag,
+                  file=sys.stderr)
 
         return
 
@@ -164,10 +167,12 @@ def load_git(directory, opt):
         problems("Branch %s branch not found." % opt.branch)
 
     if repo.active_branch != repo.heads[opt.branch]:
-        print("Switching to %s branch" % opt.branch, file=sys.stderr)
+        print("Switching to %s branch" % opt.branch,
+              file=sys.stderr)
         repo.heads[opt.branch].checkout()
     else:
-        print("Already on %s branch" % opt.branch, file=sys.stderr)
+        print("Already on %s branch" % opt.branch,
+              file=sys.stderr)
 
     if opt.remote not in [r.name for r in repo.remotes]:
         problems("Remote %s not found" % opt.remote)
