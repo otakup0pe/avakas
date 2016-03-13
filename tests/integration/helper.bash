@@ -40,7 +40,7 @@ fake_repo() {
     FILES="${FILES} $(fake_file "$REPO")"
     git add $FILES
     git commit -qm "some ${RANDOM} message" $FILES
-    git-config "$REPO"
+    config_repo "$REPO"
     echo $REPO
 }
 
@@ -48,7 +48,7 @@ clone_repo() {
     local ORIGIN="$1"
     local REPO="${AVAKAS_TEST_DIR}/briefcase-${BATS_TEST_NAME}-${RANDOM}"
     git clone -q "$ORIGIN" "$REPO"
-    git-config "$REPO"
+    config_repo "$REPO"
     echo $REPO
 }
 
