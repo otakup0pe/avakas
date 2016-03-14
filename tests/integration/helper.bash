@@ -123,3 +123,14 @@ template_skeleton() {
         exit 1
     fi
 }
+
+scan_lines() {
+    local STRING="$1"
+    local LINES="$2"
+    for l in "${LINES[@]}" ; do
+        if [ "$l" == "$STRING" ] ; then
+            return 0
+        fi
+    done
+    return 1
+}

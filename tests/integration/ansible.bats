@@ -19,15 +19,15 @@ teardown() {
     run avakas_wrapper show "$REPO"
 
     [ "$status" -eq 0 ]
-    [ "${lines[1]}" == "0.0.1" ]
+    scan_lines "0.0.1" "${lines[@]}"
 }
 
 @test "set an ansible version" {
     run avakas_wrapper set "$REPO" "0.0.2"
     echo "${lines[@]}"
     [ "$status" -eq 0 ]
-    [ "${lines[1]}" == "Version set to 0.0.2" ]
+    scan_lines "Version set to 0.0.2" "${lines[@]}"
     run avakas_wrapper show "$REPO"
     [ "$status" -eq 0 ]
-    [ "${lines[1]}" == "0.0.2" ]
+    scan_lines "0.0.2" "${lines[@]}"
 }

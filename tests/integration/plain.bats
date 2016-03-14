@@ -16,48 +16,43 @@ teardown() {
 
 @test "set a plain version" {
     run avakas_wrapper set "$REPO" "0.0.2"
-    echo "${lines[@]}"
     [ "$status" -eq 0 ]
-    [ "${lines[1]}" == "Version set to 0.0.2" ]
+    scan_lines "Version set to 0.0.2" "${lines[@]}"
     run avakas_wrapper show "$REPO"
     [ "$status" -eq 0 ]
-    [ "${lines[1]}" == "0.0.2" ]
+    scan_lines "0.0.2" "${lines[@]}"
 }
 
 @test "show a plain version" {
     run avakas_wrapper show "$REPO"
-
     [ "$status" -eq 0 ]
-    [ "${lines[1]}" == "0.0.1" ]
+    scan_lines "0.0.1" "${lines[@]}"
 }
 
 @test "bump a plain version - patch" {
     run avakas_wrapper bump "$REPO" patch
-    echo "${lines[@]}"
     [ "$status" -eq 0 ]
-    [ "${lines[1]}" == "Version updated from 0.0.1 to 0.0.2" ]
+    scan_lines "Version updated from 0.0.1 to 0.0.2" "${lines[@]}"
     run avakas_wrapper show "$REPO"
     [ "$status" -eq 0 ]
-    [ "${lines[1]}" == "0.0.2" ]
+    scan_lines "0.0.2" "${lines[@]}"
 }
 
 @test "bump a plain version - minor" {
     run avakas_wrapper bump "$REPO" minor
-    echo "${lines[@]}"
     [ "$status" -eq 0 ]
-    [ "${lines[1]}" == "Version updated from 0.0.1 to 0.1.0" ]
+    scan_lines "Version updated from 0.0.1 to 0.1.0" "${lines[@]}"
     run avakas_wrapper show "$REPO"
     [ "$status" -eq 0 ]
-    [ "${lines[1]}" == "0.1.0" ]
+    scan_lines "0.1.0" "${lines[@]}"
 }
 
 @test "bump a plain version - major" {
     run avakas_wrapper bump "$REPO" major
-    echo "${lines[@]}"
     [ "$status" -eq 0 ]
-    [ "${lines[1]}" == "Version updated from 0.0.1 to 1.0.0" ]
+    scan_lines "Version updated from 0.0.1 to 1.0.0"  "${lines[@]}"
     run avakas_wrapper show "$REPO"
     [ "$status" -eq 0 ]
-    [ "${lines[1]}" == "1.0.0" ]
+    scan_lines "1.0.0" "${lines[@]}"
 }
 
