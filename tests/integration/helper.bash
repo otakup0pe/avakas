@@ -126,11 +126,12 @@ template_skeleton() {
 
 scan_lines() {
     local STRING="$1"
-    local LINES="$2"
-    for l in "${LINES[@]}" ; do
-        if [ "$l" == "$STRING" ] ; then
+    shift
+    while [ ! -z "$1" ] ; do
+        if [ "$1" == "$STRING" ] ; then
             return 0
         fi
+        shift
     done
     return 1
 }
