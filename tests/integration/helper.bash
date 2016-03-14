@@ -36,11 +36,11 @@ fake_repo() {
     mkdir "${REPO}"
     cd "$REPO"
     git init -q
+    config_repo "$REPO"
     local FILES="$(fake_file "$REPO")"
     FILES="${FILES} $(fake_file "$REPO")"
     git add $FILES
     git commit -qm "some ${RANDOM} message" $FILES
-    config_repo "$REPO"
     echo $REPO
 }
 
