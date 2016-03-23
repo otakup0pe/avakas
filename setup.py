@@ -22,6 +22,7 @@ def main():
           description='Interact with project version metadata',
           author='Jonathan Freedman',
           author_email='jonafree@gmail.com',
+          license='MIT',
           url='https://github.com/otakup0pe/avakas',
           install_requires=['semantic_version'],
           scripts=[

@@ -4,6 +4,7 @@
 load helper
 
 setup() {
+    shared_setup
     REPO_ORIGIN=$(fake_repo)
     template_skeleton "$REPO_ORIGIN" plain "0.0.1"
     origin_repo "$REPO_ORIGIN"
@@ -11,7 +12,7 @@ setup() {
 }
 
 teardown() {
-    rm -rf "$REPO_ORIGIN" "$REPO"
+    shared_teardown
 }
 
 @test "set a plain version" {

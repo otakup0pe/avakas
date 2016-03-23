@@ -4,11 +4,23 @@
 set -e
 
 # always know where your towel is
-CIDIR=$(cd ${0%/*} && pwd)
+SCRIPT_DIR=$(cd ${0%/*} && pwd)
+CIDIR=${SCRIPT_DIR%/*}
 
 # constant presence
 BATSGIT="${CIDIR}/.bats-git"
 BATSBIN="${CIDIR}/.bats"
+
+# never not virtualenv
+echo "Checking for virtualenv"
+! which virtuelenv &> /dev/null
+
+if [ -z "$VIRTUAL_ENV" ] ; then
+    if [ ! -d "$CIDIR/.ci-env" ] ; then
+        virtualenv "${CIDIR}/.ci-env"
+    fi
+    . "${CIDIR}/.ci-env/bin/activate"
+fi
 
 # install dependencies
 pip install -r "${CIDIR}/requirements.txt" -r "${CIDIR}/requirements-dev.txt"

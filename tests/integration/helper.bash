@@ -1,19 +1,21 @@
-# -*- mode: Shell-script;bash -*- 
+# -*- mode: Shell-script;bash -*-
 
-if [ -z "$AVAKAS_TEST_DIR" ] ; then
-    AVAKAS_TEST_DIR="${BATS_TMPDIR}"
-    if [ "${AVAKAS_TEST_DIR: -1:1}" != "/" ] ; then
-        AVAKAS_TEST_DIR="${AVAKAS_TEST_DIR}/"
+function shared_setup() {
+    if [ -z "$AVAKAS_TEST_DIR" ] ; then
+        AVAKAS_TEST_DIR="${BATS_TMPDIR}"
+        if [ "${AVAKAS_TEST_DIR: -1:1}" != "/" ] ; then
+            AVAKAS_TEST_DIR="${AVAKAS_TEST_DIR}/"
+        fi
+        export AVAKAS_TEST_DIR="${AVAKAS_TEST_DIR}avakas-${RANDOM}"
+        mkdir -p "$AVAKAS_TEST_DIR"
     fi
-    export AVAKAS_TEST_DIR="${AVAKAS_TEST_DIR}avakas-${RANDOM}"
-    mkdir -p "$AVAKAS_TEST_DIR"
-fi
 
-if [ -z "$AVAKAS" ] ; then
-    AVAKAS="${BATS_TEST_DIRNAME}/../../avakas"
-fi
+    if [ -z "$AVAKAS" ] ; then
+        AVAKAS="${BATS_TEST_DIRNAME}/../../avakas"
+    fi
+}
 
-teardown() {
+shared_teardown() {
     rm -rf "$AVAKAS_TEST_DIR"
 }
 
