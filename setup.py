@@ -25,9 +25,10 @@ def main():
           license='MIT',
           url='https://github.com/otakup0pe/avakas',
           install_requires=['semantic_version'],
-          scripts=[
-              'avakas'
-          ])
+          scripts=['bin/avakas', 'bin/avakas'],
+          include_package_data=True,
+          package_data={'avakas':['version']}
+         )
 
 if __name__ == "__main__":
     main()
