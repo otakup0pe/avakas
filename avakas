@@ -62,7 +62,7 @@ def write_plain_version(directory, version):
     """Writes the version to a plain text file."""
     version_file = "%s/version" % directory
     plain_handle = open(version_file, 'w')
-    plain_handle.write("%s\n" % str(version))
+    plain_handle.write(str(version))
     plain_handle.close()
 
 
