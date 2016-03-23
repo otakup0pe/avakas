@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+set -e
+
+SCRIPT_DIR=$(cd ${0%/*} && pwd)
+ROOTDIR=${SCRIPT_DIR%/*}
+
+if [ -z "$PYPI_REPOSITORY" ] ; then
+    PYPI_REPOSITORY="pypi"
+fi
+
+cd "$ROOTDIR"
+python setup.py register -r "$PYPI_REPOSITORY"
+python setup.py sdist upload -r "$PYPI_REPOSITORY"

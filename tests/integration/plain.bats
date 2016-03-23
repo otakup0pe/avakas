@@ -21,20 +21,20 @@ teardown() {
     scan_lines "Version set to 0.0.2" "${lines[@]}"
     run avakas_wrapper show "$REPO"
     [ "$status" -eq 0 ]
-    scan_lines "0.0.2" "${lines[@]}"
+    [ "$output" == "0.0.2" ]
 }
 
 @test "show a plain version" {
     run avakas_wrapper show "$REPO"
     [ "$status" -eq 0 ]
-    scan_lines "0.0.1" "${lines[@]}"
+    [ "$output" == "0.0.1" ]
 }
 
 @test "show a build version (git only)" {
     run avakas_wrapper show "$REPO" --build
     [ "$status" -eq 0 ]
     REV=$(current_rev $REPO_ORIGIN)
-    scan_lines "0.0.1+${REV}" "${lines[@]}"
+    [ "$output" == "0.0.1+${REV}" ]
 }
 
 @test "show a build version (git only + build number)" {
@@ -43,7 +43,7 @@ teardown() {
     unset BUILD_NUMBER
     [ "$status" -eq 0 ]
     REV=$(current_rev $REPO_ORIGIN)
-    scan_lines "0.0.1+${REV}.1" "${lines[@]}"
+    [ "$output" == "0.0.1+${REV}.1" ]
 }
 
 @test "bump a plain version - patch to patch" {
@@ -52,7 +52,7 @@ teardown() {
     scan_lines "Version updated from 0.0.1 to 0.0.2" "${lines[@]}"
     run avakas_wrapper show "$REPO"
     [ "$status" -eq 0 ]
-    scan_lines "0.0.2" "${lines[@]}"
+    [ "$output" == "0.0.2" ]
 }
 
 @test "bump a plain version - patch to minor" {
@@ -61,7 +61,7 @@ teardown() {
     scan_lines "Version updated from 0.0.1 to 0.1.0" "${lines[@]}"
     run avakas_wrapper show "$REPO"
     [ "$status" -eq 0 ]
-    scan_lines "0.1.0" "${lines[@]}"
+    [ "$output" == "0.1.0" ]
 }
 
 @test "bump a plain version - patch to major" {
@@ -70,7 +70,7 @@ teardown() {
     scan_lines "Version updated from 0.0.1 to 1.0.0"  "${lines[@]}"
     run avakas_wrapper show "$REPO"
     [ "$status" -eq 0 ]
-    scan_lines "1.0.0" "${lines[@]}"
+    [ "$output" == "1.0.0" ]
 }
 
 @test "bump a plain version - patch to prerelease" {
@@ -79,6 +79,6 @@ teardown() {
     scan_lines "Version updated from 0.0.1 to 0.0.1-1"  "${lines[@]}"
     run avakas_wrapper show "$REPO"
     [ "$status" -eq 0 ]
-    scan_lines "0.0.1-1" "${lines[@]}"
+    [ "$output" == "0.0.1-1" ]
 
 }

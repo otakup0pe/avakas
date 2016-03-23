@@ -14,9 +14,24 @@ import re
 import json
 from optparse import OptionParser
 from glob import glob
+import contextlib
 from semantic_version import Version
 from git import Repo
 from erl_terms import decode as erl_decode
+
+
+@contextlib.contextmanager
+def stdout_redirect():
+    """ Forcefully redirect stdout to stderr """
+    # http://marc-abramowitz.com/archives/2013/07/19/python-context-manager-for-redirected-stdout-and-stderr/
+    try:
+        oldstdchannel = os.dup(sys.stdout.fileno())
+        os.dup2(sys.stderr.fileno(), sys.stdout.fileno())
+
+        yield
+    finally:
+        if oldstdchannel is not None:
+            os.dup2(oldstdchannel, sys.stdout.fileno())
 
 
 def usage(parser=None):
@@ -52,9 +67,9 @@ def read_package_json(directory):
     package_file = "%s/package.json" % directory
     if not os.path.exists(package_file):
         problems("The %s file is missing" % package_file)
-    package_handle = open(package_file, 'r')
-    package_json = json.load(package_handle)
-    package_handle.close()
+        package_handle = open(package_file, 'r')
+        package_json = json.load(package_handle)
+        package_handle.close()
     return package_json
 
 
@@ -95,10 +110,10 @@ def write_erlang_version(directory, version):
             lines.append(line)
     if not updated:
         problems("Unable to edit file %s" % app_file)
-    app_handle.close()
-    app_handle = open(app_file, 'w')
-    app_handle.write(''.join(lines))
-    app_handle.close()
+        app_handle.close()
+        app_handle = open(app_file, 'w')
+        app_handle.write(''.join(lines))
+        app_handle.close()
 
 
 def git_push(repo, opt, tag=None):
@@ -177,7 +192,10 @@ def load_git(directory, opt):
     if opt.remote not in [r.name for r in repo.remotes]:
         problems("Remote %s not found" % opt.remote)
 
-    repo.remotes[opt.remote].pull()
+    # we really do not want to be polluting our stdout when showing the version
+    with stdout_redirect():
+        repo.remotes[opt.remote].pull()
+
     return repo
 
 
@@ -230,7 +248,7 @@ def extract_erlang_version(directory):
     for config in app_config:
         if config[0] == 'vsn':
             return Version(config[1])
-    problems("Something wrong with OTP app file " % app_file)
+        problems("Something wrong with OTP app file " % app_file)
 
 
 def extract_ansible_version(repo, opt):
@@ -382,9 +400,9 @@ def main():
                args[2].lower() == 'major' or \
                args[2].lower() == 'pre':
                 bump = args[2].lower()
-        version = bump_version(repo, directory, bump, opt)
-        write_git(repo, directory, version, opt)
-        exit(0)
+                version = bump_version(repo, directory, bump, opt)
+                write_git(repo, directory, version, opt)
+                exit(0)
     elif operation == 'show':
         show_version(repo, directory, opt)
         exit(0)

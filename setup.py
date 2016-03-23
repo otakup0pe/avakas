@@ -24,8 +24,8 @@ def main():
           author_email='jonafree@gmail.com',
           license='MIT',
           url='https://github.com/otakup0pe/avakas',
-          install_requires=['semantic_version'],
-          scripts=['bin/avakas', 'bin/avakas'],
+          install_requires=['semantic_version', 'gitpython', 'erl_terms'],
+          scripts=['avakas'],
           include_package_data=True,
           package_data={'avakas':['version']}
          )
