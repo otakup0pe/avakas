@@ -59,6 +59,13 @@ origin_repo() {
     rm -rf "${REPO}"/*
 }
 
+current_rev() {
+    local REPO="$1"
+    cd "$REPO"
+    local REV=$(git rev-parse --verify HEAD | cut -c 1-8)
+    echo $REV
+}
+
 random_rev() {
     local REPO="$1"
     cd "$REPO"

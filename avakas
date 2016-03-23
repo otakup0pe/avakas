@@ -22,7 +22,7 @@ from erl_terms import decode as erl_decode
 def usage(parser=None):
     """Display usage syntax."""
     print("avakas show <directory>")
-    print("avakas bump <directory> [dev|patch|minor|major]")
+    print("avakas bump <directory> [pre|patch|minor|major]")
     print("avakas set <directory> <version>")
     if parser:
         parser.print_help()
@@ -181,7 +181,7 @@ def load_git(directory, opt):
     return repo
 
 
-def transmogrify_version(repo, version, bump):
+def transmogrify_version(version, bump):
     """Update the version string."""
     if bump == 'patch':
         return version.next_patch()
@@ -189,11 +189,18 @@ def transmogrify_version(repo, version, bump):
         return version.next_minor()
     elif bump == 'major':
         return version.next_major()
+    elif bump == 'pre':
+        new = Version(str(version))
+        if len(new.prerelease) == 1:
+            new.prerelease = (str(int(new.prerelease[0]) + 1))
+        elif len(new.prerelease) == 0:
+            new.prerelease = ('1')
+        else:
+            problems("Unexpected version prerelease")
+
+        return new
     else:
-        return "%s.%s.%s+%s" % (version.major,
-                                version.minor,
-                                version.patch,
-                                extract_dev_revision(repo, version))
+        problems("Invalid version component")
 
 
 def get_repo(directory):
@@ -201,19 +208,9 @@ def get_repo(directory):
     return Repo(directory, search_parent_directories=True)
 
 
-def extract_dev_revision(repo, version):
-    """Determine the version string for dev builds."""
-    current_git = str(repo.head.commit)[0:8]
-    if version.build:
-        build_version = version.build[0]
-        match = re.match(r'([a-f0-9]+)\-(\d+)', build_version)
-        if not match:
-            problems("Invalid dev-vsn string %s" % build_version)
-
-        if match.group(1) == current_git:
-            return "%s-%d" % (current_git, int(match.group(2)) + 1)
-
-    return "%s-1" % current_git
+def git_rev(repo):
+    """Returns the first eight characters of HEAD"""
+    return str(repo.head.commit)[0:8]
 
 
 def extract_node_version(directory):
@@ -282,7 +279,7 @@ def bump_version(repo, directory, bump, opt):
     else:
         artifact_version = extract_plain_version(directory)
 
-    new_version = transmogrify_version(repo, artifact_version, bump)
+    new_version = transmogrify_version(artifact_version, bump)
 
     if flavor == 'node':
         write_node_version(directory, new_version)
@@ -324,16 +321,23 @@ def show_version(repo, directory, opt):
         artifact_version = extract_ansible_version(repo, opt)
     else:
         artifact_version = extract_plain_version(directory)
+
+    if opt.build:
+        artifact_version.build = [str(git_rev(repo))]
+        if 'BUILD_NUMBER' in os.environ:
+            artifact_version.build.append(os.environ['BUILD_NUMBER'])
+
     print("%s" % str(artifact_version))
 
 
 def main():
     """Dat entrypoint"""
+    operation = sys.argv[1]
     parser = OptionParser()
-    parser.add_option('--dry-run',
-                      dest='dry',
-                      help='Will not push to git',
-                      action='store_true')
+    parser.add_option('--tag-prefix',
+                      dest='tag_prefix',
+                      help='Prefix for version tag name',
+                      default=None)
     parser.add_option('--branch',
                       dest='branch',
                       help='Branch to use when updating git',
@@ -342,13 +346,20 @@ def main():
                       dest='remote',
                       help='Git remote',
                       default='origin')
-    parser.add_option('--tag-prefix',
-                      dest='tag_prefix',
-                      help='Prefix for version tag name',
-                      default=None)
+
+    if operation == 'show':
+        parser.add_option('--build',
+                          dest='build',
+                          help='Will include build information in version',
+                          action='store_true')
+    else:
+        parser.add_option('--dry-run',
+                          dest='dry',
+                          help='Will not push to git',
+                          action='store_true')
 
     (opt, args) = parser.parse_args()
-    operation = args[0]
+
     if operation == 'help':
         usage(parser)
         exit(0)
@@ -369,7 +380,7 @@ def main():
             if args[2].lower() == 'patch' or \
                args[2].lower() == 'minor' or \
                args[2].lower() == 'major' or \
-               args[2].lower() == 'dev':
+               args[2].lower() == 'pre':
                 bump = args[2].lower()
         version = bump_version(repo, directory, bump, opt)
         write_git(repo, directory, version, opt)
@@ -377,12 +388,14 @@ def main():
     elif operation == 'show':
         show_version(repo, directory, opt)
         exit(0)
+
     elif operation == 'set':
         if len(args) == 3:
             version = args[2]
             set_version(directory, version)
             write_git(repo, directory, version, opt)
             exit(0)
+
     usage(parser)
     exit(1)
 
