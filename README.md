@@ -1,7 +1,7 @@
 avakas
 ======
 
-[![Build Status](https://travis-ci.org/otakup0pe/avakas.svg?branch=master)](https://travis-ci.org/otakup0pe/avakas)
+[![Build Status](https://travis-ci.org/otakup0pe/avakas.svg?branch=master)](https://travis-ci.org/otakup0pe/avakas)[![PyPI](https://img.shields.io/pypi/v/avakas.svg)](https://pypi.python.org/pypi/avakas)[![Maintenance](https://img.shields.io/maintenance/yes/2016.svg)]()
 
 # Overview
 
@@ -71,8 +71,4 @@ This prefix will be added to the version string when creating a git tag.
 
 # Author
 
-The avakas tool was created by Jonathan Freedman.
-
-# Disclaimer
-
-Consider this software as alpha. It's worth mentioning that I've broken git repositories a few times with pygit. I'll remove this disclaimer once I'm a little more comfortable with those interactions.
+The avakas tool was created by [Jonathan Freedman](http://jonathanfreedman.bio/).
