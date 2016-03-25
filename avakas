@@ -226,9 +226,9 @@ def get_repo(directory):
     return Repo(directory, search_parent_directories=True)
 
 
-def git_rev(repo):
+def git_rev(directory):
     """Returns the first eight characters of HEAD"""
-    return str(repo.head.commit)[0:8]
+    return str(get_repo(directory).head.commit)[0:8]
 
 
 def extract_node_version(directory):
@@ -328,7 +328,7 @@ def set_version(directory, version):
     print("Version set to %s" % version)
 
 
-def show_version(repo, directory, opt):
+def show_version(directory, opt):
     """Show the current flavour specific version for a project."""
     flavor = determine_flavor(directory)
     if flavor == 'node':
@@ -336,12 +336,13 @@ def show_version(repo, directory, opt):
     elif flavor == 'erlang':
         artifact_version = extract_erlang_version(directory)
     elif flavor == 'ansible':
+        repo = load_git(directory, opt)
         artifact_version = extract_ansible_version(repo, opt)
     else:
         artifact_version = extract_plain_version(directory)
 
     if opt.build:
-        artifact_version.build = [str(git_rev(repo))]
+        artifact_version.build = [str(git_rev(directory))]
         if 'BUILD_NUMBER' in os.environ:
             artifact_version.build.append(os.environ['BUILD_NUMBER'])
 
@@ -391,24 +392,24 @@ def main():
     if not os.path.exists(directory):
         problems("Directory %s does not exist." % directory)
 
-    repo = load_git(directory, opt)
     if operation == 'bump':
         bump = 'dev'
         if len(args) >= 3:
-            if args[2].lower() == 'patch' or \
-               args[2].lower() == 'minor' or \
-               args[2].lower() == 'major' or \
-               args[2].lower() == 'pre':
-                bump = args[2].lower()
+            bump = args[2].lower()
+            if bump == 'patch' or \
+               bump == 'minor' or \
+               bump == 'major' or \
+               bump == 'pre':
+                repo = load_git(directory, opt)
                 version = bump_version(repo, directory, bump, opt)
                 write_git(repo, directory, version, opt)
                 exit(0)
     elif operation == 'show':
-        show_version(repo, directory, opt)
+        show_version(directory, opt)
         exit(0)
-
     elif operation == 'set':
         if len(args) == 3:
+            repo = load_git(directory, opt)
             version = args[2]
             set_version(directory, version)
             write_git(repo, directory, version, opt)
