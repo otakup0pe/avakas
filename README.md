@@ -7,7 +7,7 @@ avakas
 
 This script provides a simple interface around viewing and manipulating project version metadata. It may be used to either bump, set, or view the version information for the project in a given directory. It is written with [semantic versioning](http://semver.org/) in mind.
 
-It currently does it's best to determine whether the given directory contains a NodeJS or Ansible package before just settling on a keeping the version in a file named `version`. If a NodeJS project is discovered then the `package.json` will be edited. If an Ansible project is discovered then no files will be modified.
+It currently does it's best to determine whether the given directory contains a NodeJS, Erlang, or Ansible package before just settling on a keeping the version in a file named `version`. If a NodeJS project is discovered then the `package.json` will be edited. If an Ansible project is discovered then no files will be modified but the tags will still be handled. The Erlang detection is limited to OTP apps, and `avakas` will attempt to edit a rebar style `foo.app.src`.
 
 The avakas tool makes a few assumptions
 
@@ -25,7 +25,8 @@ The avakas tool supports the following types of version files
 
 ## show
 
-This mode will return the current version for a given project. The following will show the current Public API version.
+This mode will return the current version for a given project. The following will show the current Public API version. This operation supports an additional `--build` argument, which will cause it to extend the version set in source control with build-time metadata.
+
 
 ```shell
 avakas show $HOME/projects/hal9000
@@ -45,7 +46,7 @@ This mode will automatically update the version based on the input provided. It 
 * `major` will update the major (left) version component.
 * `minor` will update the minor (middle) version component.
 * `patch` will update the patch (right) version component.
-* `dev` will keep the core version but set the build version based on a combination of GIT revision, and jenkins/local build number.
+* `pre` will update the prerelase (to the right, separated by a `-`)
 
 # Arguments
 
