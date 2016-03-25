@@ -30,20 +30,54 @@ teardown() {
     [ "$output" == "0.0.1" ]
 }
 
-@test "show a build version (git only)" {
+@test "show a build version (git only in build component)" {
     run avakas_wrapper show "$REPO" --build
     [ "$status" -eq 0 ]
-    REV=$(current_rev $REPO_ORIGIN)
+    REV=$(current_rev $REPO)
     [ "$output" == "0.0.1+${REV}" ]
 }
 
-@test "show a build version (git only + build number)" {
+@test "show a build version (git only + build number in build component)" {
     export BUILD_NUMBER=1
     run avakas_wrapper show "$REPO" --build
     unset BUILD_NUMBER
     [ "$status" -eq 0 ]
-    REV=$(current_rev $REPO_ORIGIN)
+    REV=$(current_rev $REPO)
     [ "$output" == "0.0.1+${REV}.1" ]
+}
+
+@test "show a build version (git only in build component with preexisting build component)" {
+    template_skeleton "$REPO" plain "0.0.1+1"
+    run avakas_wrapper show "$REPO" --build
+    echo "AAAA ${output}"
+    [ "$status" -eq 0 ]
+    REV=$(current_rev $REPO)
+    [ "$output" == "0.0.1+1."$REV ]
+}
+
+@test "show a build version (git only in prerelease component)" {
+    run avakas_wrapper show "$REPO" --pre-build
+    [ "$status" -eq 0 ]
+    REV=$(current_rev $REPO)
+    [ "$output" == "0.0.1-${REV}" ]
+}
+
+@test "show a build version (git only in prerelease component with preexisting prerelease component)" {
+    template_skeleton "$REPO" plain 0.0.1-1
+    run avakas_wrapper show "$REPO" --pre-build
+    [ "$status" -eq 0 ]
+    echo "AAAA ${output}"
+    REV=$(current_rev $REPO)
+    [ "$output" == "0.0.1-1."$REV ]
+}
+
+@test "show a build version (git only + build number in prerelease component)" {
+    export BUILD_NUMBER=1
+    run avakas_wrapper show "$REPO" --pre-build
+    unset BUILD_NUMBER
+    [ "$status" -eq 0 ]
+    REV=$(current_rev $REPO_ORIGIN)
+    [ "$output" == "0.0.1-${REV}.1" ]
 }
 
 @test "bump a plain version - patch to patch" {

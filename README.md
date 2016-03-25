@@ -25,7 +25,7 @@ The avakas tool supports the following types of version files
 
 ## show
 
-This mode will return the current version for a given project. The following will show the current Public API version. This operation supports an additional `--build` argument, which will cause it to extend the version set in source control with build-time metadata.
+This mode will return the current version for a given project. The following will show the current Public API version. This operation supports an additional `--build` argument, which will cause it to extend the version set in source control with build-time metadata. It also supports the `--pre-build` argument, which does the same thing on top of the prerelease field, because all kinds of package management systems do not actually support the build semantic version component.
 
 
 ```shell

@@ -341,10 +341,24 @@ def show_version(directory, opt):
     else:
         artifact_version = extract_plain_version(directory)
 
+    vsn_bit = str(git_rev(directory))
     if opt.build:
-        artifact_version.build = [str(git_rev(directory))]
+        if artifact_version.build:
+            artifact_version.build = artifact_version.build \
+                                     + (vsn_bit,)
+        else:
+            artifact_version.build = [vsn_bit]
         if 'BUILD_NUMBER' in os.environ:
             artifact_version.build.append(os.environ['BUILD_NUMBER'])
+
+    if opt.prebuild:
+        if artifact_version.prerelease:
+            artifact_version.prerelease = artifact_version.prerelease \
+                                          + (vsn_bit,)
+        else:
+            artifact_version.prerelease = [vsn_bit]
+        if 'BUILD_NUMBER' in os.environ:
+            artifact_version.prerelease.append(os.environ['BUILD_NUMBER'])
 
     print("%s" % str(artifact_version))
 
@@ -369,7 +383,13 @@ def main():
     if operation == 'show':
         parser.add_option('--build',
                           dest='build',
-                          help='Will include build information in version',
+                          help='Will include build information '
+                          'in build semver component',
+                          action='store_true')
+        parser.add_option('--pre-build',
+                          dest='prebuild',
+                          help='Will include build information '
+                          'in pre-release semver component',
                           action='store_true')
     else:
         parser.add_option('--dry-run',
@@ -405,6 +425,8 @@ def main():
                 write_git(repo, directory, version, opt)
                 exit(0)
     elif operation == 'show':
+        if opt.build and opt.prebuild:
+            problems('Cannot specify both --build and --prebuild')
         show_version(directory, opt)
         exit(0)
     elif operation == 'set':
