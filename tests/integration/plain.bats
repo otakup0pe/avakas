@@ -116,3 +116,28 @@ teardown() {
     [ "$output" == "0.0.1-1" ]
 
 }
+
+@test "show a plain version - specified filename" {
+    plain_version "$REPO" "0.0.1-1" "foo"
+    run avakas_wrapper show "$REPO" --filename "foo"
+    [ "$status" -eq 0 ]
+    [ "$output" == "0.0.1-1" ]
+}
+
+@test "set a plain version - specified filename" {
+    plain_version "$REPO" "0.0.1-1" "foo"
+    run avakas_wrapper set "$REPO" "0.0.2" --filename "foo"
+    [ "$status" -eq 0 ]
+    run avakas_wrapper show "$REPO" --filename "foo"
+    [ "$status" -eq 0 ]
+    [ "$output" == "0.0.2" ]
+}
+
+@test "bump a plain version - patch->patch, specified filename" {
+    plain_version "$REPO" "0.0.2" "foo"
+    run avakas_wrapper bump "$REPO" "patch" --filename "foo"
+    [ "$status" -eq 0 ]
+    run avakas_wrapper show "$REPO" --filename "foo"
+    [ "$status" -eq 0 ]
+    [ "$output" == "0.0.3" ]
+}

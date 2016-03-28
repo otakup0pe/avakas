@@ -95,8 +95,12 @@ update_repo() {
 plain_version() {
     local REPO="$1"
     local VSN="$2"
-    local FILE="${REPO}/version"
-    echo "$VSN" > "${REPO}/version"
+    if [ -z "$3" ] ; then
+        FILE="${REPO}/version"
+    else
+        FILE="${REPO}/${3}"
+    fi
+    echo -n "$VSN" > "$FILE"
     cd "$REPO"
     git add "$FILE"
     git commit -qm "Bumping to ${VSN}" $FILE

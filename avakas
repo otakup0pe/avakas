@@ -73,9 +73,9 @@ def read_package_json(directory):
     return package_json
 
 
-def write_plain_version(directory, version):
+def write_plain_version(directory, version, opt):
     """Writes the version to a plain text file."""
-    version_file = "%s/version" % directory
+    version_file = "%s/%s" % (directory, opt.filename)
     plain_handle = open(version_file, 'w')
     plain_handle.write(str(version))
     plain_handle.close()
@@ -272,9 +272,9 @@ def extract_ansible_version(repo, opt):
     return Version(tags[0])
 
 
-def extract_plain_version(directory):
+def extract_plain_version(directory, opt):
     """Extract just the version from a generic project."""
-    version_file = "%s/version" % directory
+    version_file = "%s/%s" % (directory, opt.filename)
     if not os.path.exists(version_file):
         problems("The version file %s is missing" % version_file)
 
@@ -295,7 +295,7 @@ def bump_version(repo, directory, bump, opt):
     elif flavor == 'ansible':
         artifact_version = extract_ansible_version(repo, opt)
     else:
-        artifact_version = extract_plain_version(directory)
+        artifact_version = extract_plain_version(directory, opt)
 
     new_version = transmogrify_version(artifact_version, bump)
 
@@ -304,13 +304,13 @@ def bump_version(repo, directory, bump, opt):
     elif flavor == 'erlang':
         write_erlang_version(directory, new_version)
     else:
-        write_plain_version(directory, new_version)
+        write_plain_version(directory, new_version, opt)
 
     print("Version updated from %s to %s" % (artifact_version, new_version))
     return new_version
 
 
-def set_version(directory, version):
+def set_version(directory, version, opt):
     """Manually set the flavour specific version for a project."""
     try:
         version = Version(version)
@@ -323,7 +323,7 @@ def set_version(directory, version):
     elif flavor == 'erlang':
         write_erlang_version(directory, version)
     elif flavor != 'ansible':
-        write_plain_version(directory, version)
+        write_plain_version(directory, version, opt)
 
     print("Version set to %s" % version)
 
@@ -339,7 +339,7 @@ def show_version(directory, opt):
         repo = load_git(directory, opt)
         artifact_version = extract_ansible_version(repo, opt)
     else:
-        artifact_version = extract_plain_version(directory)
+        artifact_version = extract_plain_version(directory, opt)
 
     vsn_bit = str(git_rev(directory))
     if opt.build:
@@ -379,6 +379,10 @@ def main():
                       dest='remote',
                       help='Git remote',
                       default='origin')
+    parser.add_option('--filename',
+                      dest='filename',
+                      help='File name. Used for fallback versioning.',
+                      default='version')
 
     if operation == 'show':
         parser.add_option('--build',
@@ -433,7 +437,7 @@ def main():
         if len(args) == 3:
             repo = load_git(directory, opt)
             version = args[2]
-            set_version(directory, version)
+            set_version(directory, version, opt)
             write_git(repo, directory, version, opt)
             exit(0)
 
