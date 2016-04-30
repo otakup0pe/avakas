@@ -269,7 +269,10 @@ def extract_ansible_version(repo, opt):
 
     tags = sorted(unsorted_tags)
     tags.reverse()
-    return Version(tags[0])
+    if len(tags) > 0:
+        return Version(tags[0])
+    else:
+        return None
 
 
 def extract_plain_version(directory, opt):
@@ -328,6 +331,28 @@ def set_version(directory, version, opt):
     print("Version set to %s" % version)
 
 
+def append_prebuild_version(git_str, artifact_version):
+    """Append the prebuild version component if so desired."""
+    if artifact_version.prerelease:
+        artifact_version.prerelease = artifact_version.prerelease \
+                                      + (git_str,)
+    else:
+        artifact_version.prerelease = [git_str]
+    if 'BUILD_NUMBER' in os.environ:
+        artifact_version.prerelease.append(os.environ['BUILD_NUMBER'])
+
+
+def append_build_version(git_str, artifact_version):
+    """Append the build version component if so desired."""
+    if artifact_version.build:
+        artifact_version.build = artifact_version.build \
+                                 + (git_str,)
+    else:
+        artifact_version.build = [git_str]
+    if 'BUILD_NUMBER' in os.environ:
+        artifact_version.build.append(os.environ['BUILD_NUMBER'])
+
+
 def show_version(directory, opt):
     """Show the current flavour specific version for a project."""
     flavor = determine_flavor(directory)
@@ -341,32 +366,21 @@ def show_version(directory, opt):
     else:
         artifact_version = extract_plain_version(directory, opt)
 
-    vsn_bit = str(git_rev(directory))
-    if opt.build:
-        if artifact_version.build:
-            artifact_version.build = artifact_version.build \
-                                     + (vsn_bit,)
-        else:
-            artifact_version.build = [vsn_bit]
-        if 'BUILD_NUMBER' in os.environ:
-            artifact_version.build.append(os.environ['BUILD_NUMBER'])
+    if not artifact_version:
+        problems('Unable to extract current version')
 
+    git_str = str(git_rev(directory))
+    if opt.build:
+        append_build_version(git_str, artifact_version)
     if opt.prebuild:
-        if artifact_version.prerelease:
-            artifact_version.prerelease = artifact_version.prerelease \
-                                          + (vsn_bit,)
-        else:
-            artifact_version.prerelease = [vsn_bit]
-        if 'BUILD_NUMBER' in os.environ:
-            artifact_version.prerelease.append(os.environ['BUILD_NUMBER'])
+        append_prebuild_version(git_str, artifact_version)
 
     print("%s" % str(artifact_version))
 
 
-def main():
-    """Dat entrypoint"""
+def parse_args(parser):
+    """Parse our command line arguments."""
     operation = sys.argv[1]
-    parser = OptionParser()
     parser.add_option('--tag-prefix',
                       dest='tag_prefix',
                       help='Prefix for version tag name',
@@ -402,7 +416,6 @@ def main():
                           action='store_true')
 
     (opt, args) = parser.parse_args()
-
     if operation == 'help':
         usage(parser)
         exit(0)
@@ -411,10 +424,25 @@ def main():
             usage(parser)
             exit(1)
 
+    return (operation, opt, args)
+
+
+def main():
+    """Dat entrypoint"""
+    parser = OptionParser()
+    (operation, opt, args) = parse_args(parser)
+
     directory = os.path.abspath(args[1])
 
     if not os.path.exists(directory):
         problems("Directory %s does not exist." % directory)
+
+    # Ansible Galaxy expects this prefix
+    if determine_flavor(directory) == 'ansible':
+        if opt.tag_prefix:
+            problems('Cannot specify a tag prefix with an Ansible Role')
+        else:
+            opt.tag_prefix = 'v'
 
     if operation == 'bump':
         bump = 'dev'
