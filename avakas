@@ -306,7 +306,7 @@ def bump_version(repo, directory, bump, opt):
         write_node_version(directory, new_version)
     elif flavor == 'erlang':
         write_erlang_version(directory, new_version)
-    else:
+    elif flavor != 'ansible':
         write_plain_version(directory, new_version, opt)
 
     print("Version updated from %s to %s" % (artifact_version, new_version))
