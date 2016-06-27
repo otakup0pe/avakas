@@ -47,20 +47,12 @@ teardown() {
 }
 
 @test "show a (travis) build version (git only + build number in build component)" {
-    if [ -z "$TRAVIS_BUILD_NUMBER" ] ; then
-        export TRAVIS_BUILD_NUMBER=1
-        TBN_SET="yes"
-    fi
-    NUM="$TRAVIS_BUILD_NUMBER"
+    export TRAVIS_BUILD_NUMBER=1
     run avakas_wrapper show "$REPO" --build
-    if [ -z "$TBN_SET" ] ; then
-        unset TRAVIS_BUILD_NUMBER
-    fi
     [ "$status" -eq 0 ]
     REV=$(current_rev $REPO)
-    [ "$output" == "0.0.1+${REV}.${NUM}" ]
-    unset NUM
-    unset TBN_SET
+    [ "$output" == "0.0.1+${REV}.1" ]
+    unset TRAVIS_BUILD_NUMBER
 }
 
 @test "show a build version (git only in build component with preexisting build component)" {
@@ -96,20 +88,12 @@ teardown() {
 }
 
 @test "show a (travis) build version (git only + build number in prerelease component)" {
-    if [ -z "$TRAVIS_BUILD_NUMBER" ] ; then
-        export TRAVIS_BUILD_NUMBER=1
-        TBN_SET="yes"
-    fi
-    NUM="$TRAVIS_BUILD_NUMBER"
+    export TRAVIS_BUILD_NUMBER=1
     run avakas_wrapper show "$REPO" --pre-build
-    if [ -z "$TBN_SET" ] ; then
-        unset TRAVIS_BUILD_NUMBER
-    fi
     [ "$status" -eq 0 ]
     REV=$(current_rev $REPO_ORIGIN)
-    [ "$output" == "0.0.1-${REV}.${NUM}" ]
-    unset NUM
-    unset TBN_SET
+    [ "$output" == "0.0.1-${REV}.1" ]
+    unset TRAVIS_BUILD_NUMBER
 }
 
 @test "bump a plain version - patch to patch" {

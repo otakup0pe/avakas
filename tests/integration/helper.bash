@@ -1,6 +1,10 @@
 # -*- mode: Shell-script;bash -*-
 
 function shared_setup() {
+    # we do not want this during tests
+    if [ ! -z "$TRAVIS_BUILD_NUMBER" ] ; then
+        unset TRAVIS_BUILD_NUMBER
+    fi
     if [ -z "$AVAKAS_TEST_DIR" ] ; then
         AVAKAS_TEST_DIR="${BATS_TMPDIR}"
         if [ "${AVAKAS_TEST_DIR: -1:1}" != "/" ] ; then
