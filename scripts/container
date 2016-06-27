@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 
 set -e
-if [ "$BRANCH" != "master" ] ; then
+if git describe --tags --exact-match HEAD &> /dev/null ; then
+    LATEST="yes"
+fi
+if [ -z "$LATEST" ] ; then
     VSN=$(./avakas show . --pre-build 2> /dev/null)
 else
     VSN=$(./avakas show . 2> /dev/null)
@@ -9,7 +12,7 @@ fi
 [ ! -z "$VSN" ]
 docker build -t "otakup0pe/avakas:${VSN}" .
 docker push  "otakup0pe/avakas:${VSN}"
-if [ "$BRANCH" == "master" ] ; then
+if [ ! -z "$LATEST" ] ; then
     docker tag "otakup0pe/avakas:${VSN}" "otakup0pe/avakas:latest"
     docker push "otakup0pe/avakas:latest"
 fi

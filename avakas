@@ -341,6 +341,9 @@ def append_prebuild_version(git_str, artifact_version):
     if 'BUILD_NUMBER' in os.environ:
         artifact_version.prerelease.append(os.environ['BUILD_NUMBER'])
 
+    if 'TRAVIS_BUILD_NUMBER' in os.environ:
+        artifact_version.prerelease.append(os.environ['TRAVIS_BUILD_NUMBER'])
+
 
 def append_build_version(git_str, artifact_version):
     """Append the build version component if so desired."""
