@@ -340,8 +340,7 @@ def append_prebuild_version(git_str, artifact_version):
         artifact_version.prerelease = [git_str]
     if 'BUILD_NUMBER' in os.environ:
         artifact_version.prerelease.append(os.environ['BUILD_NUMBER'])
-
-    if 'TRAVIS_BUILD_NUMBER' in os.environ:
+    elif 'TRAVIS_BUILD_NUMBER' in os.environ:
         artifact_version.prerelease.append(os.environ['TRAVIS_BUILD_NUMBER'])
 
 
@@ -354,6 +353,8 @@ def append_build_version(git_str, artifact_version):
         artifact_version.build = [git_str]
     if 'BUILD_NUMBER' in os.environ:
         artifact_version.build.append(os.environ['BUILD_NUMBER'])
+    elif 'TRAVIS_BUILD_NUMBER' in os.environ:
+        artifact_version.build.append(os.environ['TRAVIS_BUILD_NUMBER'])
 
 
 def show_version(directory, opt):

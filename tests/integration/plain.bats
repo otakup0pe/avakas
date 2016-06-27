@@ -37,7 +37,7 @@ teardown() {
     [ "$output" == "0.0.1+${REV}" ]
 }
 
-@test "show a build version (git only + build number in build component)" {
+@test "show a (jenkins) build version (git only + build number in build component)" {
     export BUILD_NUMBER=1
     run avakas_wrapper show "$REPO" --build
     unset BUILD_NUMBER
@@ -46,10 +46,26 @@ teardown() {
     [ "$output" == "0.0.1+${REV}.1" ]
 }
 
+@test "show a (travis) build version (git only + build number in build component)" {
+    if [ -z "$TRAVIS_BUILD_NUMBER" ] ; then
+        export TRAVIS_BUILD_NUMBER=1
+        TBN_SET="yes"
+    fi
+    NUM="$TRAVIS_BUILD_NUMBER"
+    run avakas_wrapper show "$REPO" --build
+    if [ -z "$TBN_SET" ] ; then
+        unset TRAVIS_BUILD_NUMBER
+    fi
+    [ "$status" -eq 0 ]
+    REV=$(current_rev $REPO)
+    [ "$output" == "0.0.1+${REV}.${NUM}" ]
+    unset NUM
+    unset TBN_SET
+}
+
 @test "show a build version (git only in build component with preexisting build component)" {
     template_skeleton "$REPO" plain "0.0.1+1"
     run avakas_wrapper show "$REPO" --build
-    echo "AAAA ${output}"
     [ "$status" -eq 0 ]
     REV=$(current_rev $REPO)
     [ "$output" == "0.0.1+1."$REV ]
@@ -66,18 +82,34 @@ teardown() {
     template_skeleton "$REPO" plain 0.0.1-1
     run avakas_wrapper show "$REPO" --pre-build
     [ "$status" -eq 0 ]
-    echo "AAAA ${output}"
     REV=$(current_rev $REPO)
     [ "$output" == "0.0.1-1."$REV ]
 }
 
-@test "show a build version (git only + build number in prerelease component)" {
+@test "show a (jenkins) build version (git only + build number in prerelease component)" {
     export BUILD_NUMBER=1
     run avakas_wrapper show "$REPO" --pre-build
     unset BUILD_NUMBER
     [ "$status" -eq 0 ]
     REV=$(current_rev $REPO_ORIGIN)
     [ "$output" == "0.0.1-${REV}.1" ]
+}
+
+@test "show a (travis) build version (git only + build number in prerelease component)" {
+    if [ -z "$TRAVIS_BUILD_NUMBER" ] ; then
+        export TRAVIS_BUILD_NUMBER=1
+        TBN_SET="yes"
+    fi
+    NUM="$TRAVIS_BUILD_NUMBER"
+    run avakas_wrapper show "$REPO" --pre-build
+    if [ -z "$TBN_SET" ] ; then
+        unset TRAVIS_BUILD_NUMBER
+    fi
+    [ "$status" -eq 0 ]
+    REV=$(current_rev $REPO_ORIGIN)
+    [ "$output" == "0.0.1-${REV}.${NUM}" ]
+    unset NUM
+    unset TBN_SET
 }
 
 @test "bump a plain version - patch to patch" {
