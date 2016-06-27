@@ -8,3 +8,6 @@ test:
 
 clean:
 	rm -rf .bats-git .bats .ci-env avakas.egg-info dist
+
+container:
+	./scripts/container

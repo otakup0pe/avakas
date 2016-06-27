@@ -1,6 +1,14 @@
-sudo: false
+sudo: true
+services:
+- docker
 language: python
-script: make test
+script: make test container
+env:
+  global:
+    DOCKER_HUB_USERNAME: otakup0pe
+    DOCKER_HUB_EMAIL: jonafree@gmail.com
+    DOCKER_HUB_PASSWORD:
+      secure: o6ixb9Nd3O2XkR/yXvmQcXPL7Aw/Q8tTjKlaKYdxgXK3XFFhqp+V7nJKSJXT9BP58CxSu7fDVriE7vvoKTzFSQLaPuK8PrNLYHGQOtwU4iJVGRiUWUuzLgCQEqbcSfQemOvVqYBBcB9ruQ14A6h3jMhPtP6QO1E9/86DmcjAwTU/qgM6MVZ1/OoAe0Eo/VKRCNRM9vw3TnqmnboBNwQf7BdXvyuTmNZqkUS3W/fNBbPQgPzzUiTnAIRd5rNbSaa10Pd1RgSRiDU3pyB2TNkI8eoQNaz/1Zpfa8KfHN4bajYjgUAHnCbxyuhcRComnTWgZrK5gYN5hz1PVzxl7wo2lNTTQ3FlWeHp50duMsK4DXC7LtHgJFWlcQDn2wRW2YOHlpXna5GwVoG+7/42gxLtsoZgufO86pzjkJgPVdeaZ+PyEOfJHgmIEDE7IVn+Di5w2p+yP7wUifqKt76J1G2IEMPmOCgo1tdxhiCdpm1MhurQCZg11FTFLE4av/iUpYJWfzRtdU4VcCWhQ0EovIUq3BFZjmkn56+NLO38N5gFuympXyLziRcnfvjgRrjRWhj6QI7GYD3HUfbHtlnkPfL3UPCjCpsnPeyo9mwhvWnFAltiBw7oSkG5ZS6qIFS5zF57eNhvTT8f1IBOCsUG63WrqPooxFMoYk98Qawv2Vc6Yeg=
 deploy:
   provider: pypi
   user: otakup0pe
@@ -10,3 +18,6 @@ deploy:
     repo: otakup0pe/avakas
   password:
     secure: J/90nkueQZgXWeqDp0gryzTtTOQ7P3Max2+AP3x9ukTUL5hQXJGWAHqIW5J9iJ6TH9CEZW3bO4ivFQi5lnebYgxPKHmlqI0+IJL+Q56onn0d3fVcrifZ04NI311jXiKvPxdVxOd5Hm6jXv7NG3TBaeJHmcJdvuCXWVieGIPA0x79H4IYCDONX3vc+GkDEt0gu/F8O8F2426kcLfuuk6xGFRmQMASCIKSM5LOOpNES1P2QJ/HyEoGSMaM+EGVtuorKvt3GnF1c/aEcFwKMVTGWMtWoPh3nKOidJwk6Y0o+e2hqlIMuK5W9zqO938dtGDEoSkeGC1qW5vwfYiSjT00GbcNd4bP2gxDD4hAygoqe/KG7uVHIjeACw0/pA+eSTtWVNMSMn9oVBbc0eyDbs4PrNB/Pn+smUzxqwYlik5ymSSJ1TjQphGCVZCl8jVtuwjNhzRJxDC8mtJg16oxsE/+I0MPV2LH2yil8LlnbRNu46dou5VbRIYdmTOGbpe88V25GyKCzjDTFV16MHf4E9xCD7jQwnMrBy84bE2NfqNArDHtrVo0fFJjrJv7opEzj3Xln2/+v0mQIXR5DXGgnAAgLX4ABvldDqdZk9NVWl2UEe7mP7ls8hl/qwtDMX6PwAlmlbCyH+V0p99S/JBZb8M7/e2Fcq5IOCfOE/eydz8RCm0=
+
+install:
+  - docker login --email=$DOCKER_HUB_EMAIL --username=$DOCKER_HUB_USERNAME --password=$DOCKER_HUB_PASSWORD
