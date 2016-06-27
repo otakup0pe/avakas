@@ -4,10 +4,9 @@ services:
 language: python
 script: make test container
 env:
-  global:
-    DOCKER_HUB_USERNAME: otakup0pe
-    DOCKER_HUB_EMAIL: jonafree@gmail.com
-    DOCKER_HUB_PASSWORD:
+  - DOCKER_HUB_USERNAME: otakup0pe
+  - DOCKER_HUB_EMAIL: jonafree@gmail.com
+  - DOCKER_HUB_PASSWORD:
       secure: o6ixb9Nd3O2XkR/yXvmQcXPL7Aw/Q8tTjKlaKYdxgXK3XFFhqp+V7nJKSJXT9BP58CxSu7fDVriE7vvoKTzFSQLaPuK8PrNLYHGQOtwU4iJVGRiUWUuzLgCQEqbcSfQemOvVqYBBcB9ruQ14A6h3jMhPtP6QO1E9/86DmcjAwTU/qgM6MVZ1/OoAe0Eo/VKRCNRM9vw3TnqmnboBNwQf7BdXvyuTmNZqkUS3W/fNBbPQgPzzUiTnAIRd5rNbSaa10Pd1RgSRiDU3pyB2TNkI8eoQNaz/1Zpfa8KfHN4bajYjgUAHnCbxyuhcRComnTWgZrK5gYN5hz1PVzxl7wo2lNTTQ3FlWeHp50duMsK4DXC7LtHgJFWlcQDn2wRW2YOHlpXna5GwVoG+7/42gxLtsoZgufO86pzjkJgPVdeaZ+PyEOfJHgmIEDE7IVn+Di5w2p+yP7wUifqKt76J1G2IEMPmOCgo1tdxhiCdpm1MhurQCZg11FTFLE4av/iUpYJWfzRtdU4VcCWhQ0EovIUq3BFZjmkn56+NLO38N5gFuympXyLziRcnfvjgRrjRWhj6QI7GYD3HUfbHtlnkPfL3UPCjCpsnPeyo9mwhvWnFAltiBw7oSkG5ZS6qIFS5zF57eNhvTT8f1IBOCsUG63WrqPooxFMoYk98Qawv2Vc6Yeg=
 deploy:
   provider: pypi
