@@ -10,6 +10,6 @@ fi
 docker build -t "otakup0pe/avakas:${VSN}" .
 docker push  "otakup0pe/avakas:${VSN}"
 if [ "$BRANCH" == "master" ] ; then
-    docker tag "otakup0pe/avakas:latest"
+    docker tag "otakup0pe/avakas:${VSN}" "otakup0pe/avakas:latest"
     docker push "otakup0pe/avakas:latest"
 fi
