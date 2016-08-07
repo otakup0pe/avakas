@@ -58,6 +58,8 @@ def determine_flavor(directory):
         return 'ansible'
     elif len(glob("%s/src/*.app.src" % directory)) == 1:
         return 'erlang'
+    elif os.path.exists("%s/metadata.rb" % directory):
+        return 'chef-cookbook'
     else:
         return 'plain'
 
@@ -108,12 +110,38 @@ def write_erlang_version(directory, version):
             lines.append(re_out % version)
         else:
             lines.append(line)
+
+    app_handle.close()
     if not updated:
         problems("Unable to edit file %s" % app_file)
-        app_handle.close()
+    else:
         app_handle = open(app_file, 'w')
         app_handle.write(''.join(lines))
         app_handle.close()
+
+
+def write_cookbook_version(directory, version):
+    """Writes the version to metadata.rb"""
+    metadata_file = "%s/metadata.rb" % directory
+    metadata_handle = open(metadata_file, 'r')
+    lines = []
+    updated = False
+    for line in metadata_handle:
+        pattern = r'^(version.+["\'])(\d+\.\d+\.\d+)(["\'].*)'
+        re_out = re.sub(pattern, r'\1%s\3', line)
+        if re_out != line:
+            updated = True
+            lines.append(re_out % version)
+        else:
+            lines.append(line)
+
+    metadata_handle.close()
+    if not updated:
+        problems("Unable to edit file %s" % metadata_file)
+    else:
+        metadata_handle = open(metadata_file, 'w')
+        metadata_handle.write(''.join(lines))
+        metadata_handle.close()
 
 
 def git_push(repo, opt, tag=None):
@@ -156,6 +184,8 @@ def write_git(repo, directory, vsn_str, opt):
     elif flav == 'erlang':
         app_file = glob("%s/src/*.app.src" % directory)
         vsn_file = "%s/%s" % (directory, app_file)
+    elif flav == 'chef-cookbook':
+        vsn_file = '%s/metadata.rb' % directory
     elif flav != 'ansible':
         vsn_file = "%s/version" % directory
 
@@ -287,6 +317,16 @@ def extract_plain_version(directory, opt):
     return Version(version)
 
 
+def extract_cookbook_version(directory):
+    """Extract the version from Chef Cookbook metadata"""
+    metadata_handle = open("%s/metadata.rb" % directory, 'r')
+    metadata = metadata_handle.read()
+    metadata_handle.close()
+    pattern = r'^version.+["\'](?P<vsn>\d+\.\d+\.\d+)["\'].*'
+    vsn_match = re.compile(pattern, re.MULTILINE).search(metadata)
+    return Version(vsn_match.group('vsn'))
+
+
 def bump_version(repo, directory, bump, opt):
     """Bump the flavour specific version for a project."""
     flavor = determine_flavor(directory)
@@ -297,6 +337,8 @@ def bump_version(repo, directory, bump, opt):
         artifact_version = extract_erlang_version(directory)
     elif flavor == 'ansible':
         artifact_version = extract_ansible_version(repo, opt)
+    elif flavor == 'chef-cookbook':
+        artifact_version = extract_cookbook_version(directory)
     else:
         artifact_version = extract_plain_version(directory, opt)
 
@@ -306,6 +348,8 @@ def bump_version(repo, directory, bump, opt):
         write_node_version(directory, new_version)
     elif flavor == 'erlang':
         write_erlang_version(directory, new_version)
+    elif flavor == 'chef-cookbook':
+        write_cookbook_version(directory, new_version)
     elif flavor != 'ansible':
         write_plain_version(directory, new_version, opt)
 
@@ -325,7 +369,9 @@ def set_version(directory, version, opt):
         write_node_version(directory, version)
     elif flavor == 'erlang':
         write_erlang_version(directory, version)
-    elif flavor != 'ansible':
+    elif flavor == 'chef-cookbook':
+        write_cookbook_version(directory, version)
+    elif flavor == 'plain':
         write_plain_version(directory, version, opt)
 
     print("Version set to %s" % version)
@@ -367,6 +413,8 @@ def show_version(directory, opt):
     elif flavor == 'ansible':
         repo = load_git(directory, opt)
         artifact_version = extract_ansible_version(repo, opt)
+    elif flavor == 'chef-cookbook':
+        artifact_version = extract_cookbook_version(directory)
     else:
         artifact_version = extract_plain_version(directory, opt)
 

@@ -1,0 +1,6 @@
+name 'test-cookbook'
+maintainer 'Test User'
+maintainer_email 'test@example.com'
+license 'all_rights'
+description 'A Test Cookbook Fixture'
+version '@@VSN@@'

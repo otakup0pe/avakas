@@ -123,6 +123,16 @@ ansible_version() {
     tag_repo "$REPO" "$VSN"
 }
 
+cookbook_version() {
+    local REPO="$1"
+    local VSN="$2"
+    sed -e "s/@@VSN@@/${VSN}/" < "${BATS_TEST_DIRNAME}/fixtures/metadata.rb" > "${REPO}/metadata.rb"
+    cd "$REPO"
+    git add metadata.rb
+    git commit -qm "This is an important skeleton" metadata.rb
+    tag_repo "$REPO" "$VSN"
+}
+
 avakas_wrapper() {
     "$AVAKAS" $* 2> /dev/null
 }
@@ -135,6 +145,8 @@ template_skeleton() {
         plain_version "$REPO" "$VSN"
     elif [ "$FLAVOR" == "ansible" ] ; then
         ansible_version "$REPO" "$VSN"
+    elif [ "$FLAVOR" == "cookbook" ] ; then
+        cookbook_version "$REPO" "$VSN"
     else
         echo "Invalid skeleton!"
         exit 1
