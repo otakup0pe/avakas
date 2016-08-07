@@ -7,7 +7,7 @@ avakas
 
 This script provides a simple interface around viewing and manipulating project version metadata. It may be used to either bump, set, or view the version information for the project in a given directory. It is written with [semantic versioning](http://semver.org/) in mind.
 
-It currently does it's best to determine whether the given directory contains a NodeJS, Erlang, or Ansible package before just settling on keeping the version in a file named `version`. If a NodeJS project is discovered then the `package.json` will be edited. If an Ansible project is discovered then no files will be modified but the tags will still be handled. The Erlang detection is limited to OTP apps, and `avakas` will attempt to edit a rebar style `foo.app.src`.
+It currently does it's best to determine whether the given directory contains a NodeJS, Erlang, Chef Cookbook, or Ansible project before just settling on keeping the version in a file named `version`. If a NodeJS project is discovered then the `package.json` will be edited. If an Ansible project is discovered then no files will be modified but the tags will still be handled. The Erlang detection is limited to OTP apps, and `avakas` will attempt to edit a rebar style `foo.app.src`. If a Chef Cookbook is discovered then `avakas` will attempt to modify the `version` attribute in `metadata.rb`.
 
 The avakas tool makes a few assumptions
 
@@ -19,6 +19,7 @@ The avakas tool supports the following types of version files
 
 * NodeJS `package.json`
 * Erlang/OTP and rebar `foo.app.src`
+* Chef Cookbook `metadata.rb`
 * Plain ol' `version` file
 
 # Operations

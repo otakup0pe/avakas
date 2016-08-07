@@ -34,7 +34,7 @@ fi
 
 # so pretty much style guides
 pep8 "${CIDIR}/avakas"
-pylint --rcfile "${CIDIR}/.pylintrc" "${CIDIR}/avakas"
+pylint "${CIDIR}/avakas"
 
 # integration tests
 "${CIDIR}/.bats/bin/bats" "${CIDIR}"/tests/integration/*.bats
