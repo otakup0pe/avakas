@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -e
+
+function problems {
+    echo "Error: ${1}"
+    exit 1
+}
+ACTION="$1"
+if [ -z "$ACTION" ] ; then
+    echo "avakas docker container ${VERSION}"
+    avakas
+    exit 1
+fi
+
+ARGS="$*"
+if [ "$ACTION" == "bump" ] || [ "$ACTION" == "set" ] ; then
+    mkdir -p "${HOME}/.ssh"
+    if [ -z "$SSH_AUTH_SOCK" ] ; then
+        if [ ! -e "/etc/avakas/id_rsa" ] ; then
+            problems "unable to find id_rsa"
+        else
+            cp "/etc/avakas/id_rsa" "${HOME}/.ssh/id_rsa"
+        fi
+    fi
+    ssh-keyscan "$SSH_SCAN_HOST" 2> /dev/null 1> "${HOME}/.ssh/known_hosts" || problems "Unable to load git host key"
+    chmod -R og-rwx "${HOME}/.ssh"
+fi
+
+if [ -e "/etc/avakas/avakasrc" ] ; then
+    # shellcheck disable=SC1091
+    source /etc/avakas/avakasrc
+fi
+/usr/local/bin/avakas $ARGS

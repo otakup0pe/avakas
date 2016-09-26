@@ -10,8 +10,11 @@ else
     VSN=$(./avakas show . 2> /dev/null)
 fi
 [ ! -z "$VSN" ]
-docker build -t "otakup0pe/avakas:${VSN}" .
+docker build \
+       --build-arg "VERSION=${VSN}" \
+       -t "otakup0pe/avakas:${VSN}" .
 docker push  "otakup0pe/avakas:${VSN}"
+
 if [ ! -z "$LATEST" ] ; then
     docker tag "otakup0pe/avakas:${VSN}" "otakup0pe/avakas:latest"
     docker push "otakup0pe/avakas:latest"

@@ -67,6 +67,26 @@ The remote to push tags and version updates.
 
 This prefix will be added to the version string when creating a git tag.
 
+# Docker
+
+You can use `avakas` as a Docker container as well. It supports either static SSH keys or the SSH Agent. It seems like the SSH agent only works on Linux though. The Docker entrypoint should setup your SSH environment on the `set` and `bump` `avakas` actions.
+
+You can map a folder to `/etc/avakas` for static SSH or Git environment configuration. If the file `avakasrc` is present in `/etc/avakas` it will be sourced prior to running `avakas`. A common use case here is to export the `GIT_AUTHOR_NAME` and `GIT_AUTHOR_EMAIL` environment variables.
+
+In all cases, you will want to map a source project into a folder and point `avakas` at it. The following example (running on Linux with SSH Agent forwarding) would bump the patch portion of the version in the current directory.
+
+```
+$ docker run -t -v $(pwd):/app -v $SSH_AUTH_SOCK:/ssh-agent -e SSH_AUTH_SOCK=/ssh-agent otakup0pe/avakas bump /app patch
+```
+
+The next example (running on OSX) would set the version explicitly in the current directory. Note how we need to setup a working folder to map `/etc/avakas` against.
+
+```
+$ mkdir -p /tmp/ssh-avakas-working
+$ cp ~/.ssh/id_rsa /tmp/ssh-avakas-working
+$ docker run  -v $(pwd):/app -v /tmp/ssh-avakas-working:/etc/avakas otakup0pe/avakas set /app 0.0.1
+```
+
 # License
 
 [MIT](https://github.com/otakup0pe/avakas/blob/master/LICENSE)
