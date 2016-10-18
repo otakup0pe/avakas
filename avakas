@@ -342,6 +342,13 @@ def bump_version(repo, directory, bump, opt):
     else:
         artifact_version = extract_plain_version(directory, opt)
 
+    # First see if bump == "auto" 
+    # if it is then search the commit history sense last version bump 
+    #   find the last avakas commit
+    #   find all commits containg "patch, major, or minor" sense the last avakas commit
+    #   count the number of each
+    #   call transmogrify_version(artifact_version, bump) for each instance of each kind
+
     new_version = transmogrify_version(artifact_version, bump)
 
     if flavor == 'node':
