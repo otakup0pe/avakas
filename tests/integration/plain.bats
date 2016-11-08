@@ -123,6 +123,36 @@ teardown() {
     [ "$output" == "1.0.0" ]
 }
 
+@test "bump because of git commit containg word major" {
+    commit_to_repo "$REPO" "major"
+    run avakas_wrapper bump "$REPO" auto
+    [ "$status" -eq 0 ]
+    scan_lines "Version updated from 0.0.1 to 1.0.0"  "${lines[@]}"
+    run avakas_wrapper show "$REPO"
+    [ "$status" -eq 0 ]
+    [ "$output" == "1.0.0" ]
+}
+
+@test "bump because of git commit containg word minor" {
+    commit_to_repo "$REPO" "minor"
+    run avakas_wrapper bump "$REPO" auto
+    [ "$status" -eq 0 ]
+    scan_lines "Version updated from 0.0.1 to 0.1.0"  "${lines[@]}"
+    run avakas_wrapper show "$REPO"
+    [ "$status" -eq 0 ]
+    [ "$output" == "0.1.0" ]
+}
+
+@test "bump because of git commit containg word patch" {
+    commit_to_repo "$REPO" "patch"
+    run avakas_wrapper bump "$REPO" auto
+    [ "$status" -eq 0 ]
+    scan_lines "Version updated from 0.0.1 to 0.0.2"  "${lines[@]}"
+    run avakas_wrapper show "$REPO"
+    [ "$status" -eq 0 ]
+    [ "$output" == "0.0.2" ]
+}
+
 @test "bump a plain version - patch to prerelease" {
     run avakas_wrapper bump "$REPO" pre
     [ "$status" -eq 0 ]
