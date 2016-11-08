@@ -338,6 +338,9 @@ def bump_auto(version, directory, opt):
                 return version.next_minor()
             if 'major' in commit.message:
                 return version.next_major()
+            if ('major' in commit.message) and ('minor' in commit.message)\
+                    and ('patch' in commit.message):
+                return version.next_major()
             else:
                 problems("Invalid version component")
 
@@ -472,12 +475,12 @@ def parse_args(parser):
         parser.add_option('--build',
                           dest='build',
                           help='Will include build information '
-                               'in build semver component',
+                          'in build semver component',
                           action='store_true')
         parser.add_option('--pre-build',
                           dest='prebuild',
                           help='Will include build information '
-                               'in pre-release semver component',
+                          'in pre-release semver component',
                           action='store_true')
     else:
         parser.add_option('--dry-run',
