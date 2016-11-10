@@ -330,7 +330,7 @@ def extract_cookbook_version(directory):
 def bump_auto(version, directory, opt):
     """Bump if the operation is auto based on the keyword in commit."""
     repo = load_git(directory, opt)
-    for commit in repo.iter_commits('HEAD'):
+    for commit in repo.iter_commits('MASTER'):
         if 'tag' not in commit.name_rev:
             if 'patch' in commit.message:
                 return version.next_patch()
@@ -338,11 +338,8 @@ def bump_auto(version, directory, opt):
                 return version.next_minor()
             if 'major' in commit.message:
                 return version.next_major()
-            if ('major' in commit.message) and ('minor' in commit.message)\
-                    and ('patch' in commit.message):
-                return version.next_major()
             else:
-                problems("Invalid version component")
+                problems("Missing Version Components!")
 
 
 def bump_version(repo, directory, bump, opt):

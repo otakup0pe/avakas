@@ -44,6 +44,7 @@ avakas set $HOME/projects/hal9000 2.0.0
 
 This mode will automatically update the version based on the input provided. It has four modes of operation.
 
+* 'auto'  will update the version based on the git commit message.
 * `major` will update the major (left) version component.
 * `minor` will update the minor (middle) version component.
 * `patch` will update the patch (right) version component.
