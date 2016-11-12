@@ -2,7 +2,7 @@ sudo: true
 services:
 - docker
 language: python
-script: make test container
+script: 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then make test container ; else make test ; fi'
 env:
   global:
   - DOCKER_HUB_USERNAME=otakup0pe
