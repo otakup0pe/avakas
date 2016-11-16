@@ -338,8 +338,6 @@ def bump_auto(version, directory, opt):
                 return version.next_minor()
             if 'major' in commit.message:
                 return version.next_major()
-            else:
-                problems("Missing Version Components!")
 
 
 def bump_version(repo, directory, bump, opt):
