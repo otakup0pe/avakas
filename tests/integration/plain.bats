@@ -125,7 +125,7 @@ teardown() {
 
 @test "bump because of git commit containg word major" {
     commit_to_repo "$REPO" "major"
-    run avakas_wrapper bump "$REPO" auto
+    run "$AVAKAS" bump "$REPO" auto
     echo "$output"
     [ "$status" -eq 0 ]
     scan_lines "Version updated from 0.0.1 to 1.0.0"  "${lines[@]}"
