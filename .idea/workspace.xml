@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1dee574c-002b-4455-a7cd-1ddf55b2c5df" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/avakas" afterPath="$PROJECT_DIR$/avakas" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tests/integration/plain.bats" afterPath="$PROJECT_DIR$/tests/integration/plain.bats" />
     </list>
     <ignored path="avakas.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -22,7 +22,7 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="avakas" pinned="false" current-in-tab="true">
+      <file leaf-file-name="avakas" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/avakas">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="217">
@@ -34,11 +34,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="plain.bats" pinned="false" current-in-tab="false">
+      <file leaf-file-name="plain.bats" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/tests/integration/plain.bats">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="427">
-              <caret line="163" column="0" selection-start-line="163" selection-start-column="0" selection-end-line="163" selection-end-column="0" />
+            <state relative-caret-position="202">
+              <caret line="128" column="10" selection-start-line="128" selection-start-column="10" selection-end-line="128" selection-end-column="10" />
               <folding />
             </state>
           </provider>
@@ -53,8 +53,8 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/README.md" />
-        <option value="$PROJECT_DIR$/tests/integration/plain.bats" />
         <option value="$PROJECT_DIR$/avakas" />
+        <option value="$PROJECT_DIR$/tests/integration/plain.bats" />
       </list>
     </option>
   </component>
@@ -612,14 +612,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/tests/integration/plain.bats">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="427">
-          <caret line="163" column="0" selection-start-line="163" selection-start-column="0" selection-end-line="163" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/avakas">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="217">
@@ -627,6 +619,14 @@
           <folding>
             <element signature="e#209#246#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/integration/plain.bats">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="202">
+          <caret line="128" column="10" selection-start-line="128" selection-start-column="10" selection-end-line="128" selection-end-column="10" />
+          <folding />
         </state>
       </provider>
     </entry>
