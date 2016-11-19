@@ -155,8 +155,9 @@ teardown() {
 }
 
 @test "multibump because of git commit containing words patch and minor" {
-    commit_to_repo "$REPO" "patch", "minor"
+    commit_to_repo "$REPO" "patch" "minor"
     run avakas_wrapper bump "$REPO" auto
+    echo "output"
     [ "$status" -eq 0 ]
     scan_lines "Version updated from 0.0.1 to 0.1.0"  "${lines[@]}"
     run avakas_wrapper show "$REPO"
