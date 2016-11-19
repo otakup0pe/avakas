@@ -338,6 +338,9 @@ def bump_auto(version, directory, opt):
                 return version.next_minor()
             if 'major' in commit.message:
                 return version.next_major()
+            if 'minor patch' in commit.message:
+                    return version.next_minor()
+
 
 
 def bump_version(repo, directory, bump, opt):
