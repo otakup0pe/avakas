@@ -154,15 +154,15 @@ teardown() {
     [ "$output" == "0.0.2" ]
 }
 
-@test "multibump because of git commit containing words patch and minor" {
-    commit_to_repo "$REPO" "patch" "minor"
+@test "multibump because of git commit containing words major and minor and patch" {
+    commit_to_repo "$REPO" "major foo minor and patch"
     run avakas_wrapper bump "$REPO" auto
     echo "output"
     [ "$status" -eq 0 ]
-    scan_lines "Version updated from 0.0.1 to 0.1.0"  "${lines[@]}"
+    scan_lines "Version updated from 0.0.1 to 1.0.0"  "${lines[@]}"
     run avakas_wrapper show "$REPO"
     [ "$status" -eq 0 ]
-    [ "$output" == "0.1.0" ]
+    [ "$output" == "1.0.0" ]
 }
 
 @test "bump a plain version - patch to prerelease" {

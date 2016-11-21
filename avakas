@@ -18,6 +18,7 @@ import contextlib
 from semantic_version import Version
 from git import Repo
 from erl_terms import decode as erl_decode
+import re
 
 
 @contextlib.contextmanager
@@ -332,14 +333,18 @@ def bump_auto(version, directory, opt):
     repo = load_git(directory, opt)
     for commit in repo.iter_commits('master'):
         if 'tag' not in commit.name_rev:
-            if 'patch' in commit.message:
-                return version.next_patch()
-            if 'minor' in commit.message:
-                return version.next_minor()
-            if 'major' in commit.message:
+            message = commit.message
+            search_major = re.search(r'major', message, re.I)
+            search_minor = re.search(r'minor', message, re.I)
+            search_patch = re.search(r'patch', message, re.I)
+            if search_major:
                 return version.next_major()
-            if 'minor patch' in commit.message:
+            elif search_minor:
                 return version.next_minor()
+            elif search_patch:
+                return version.next_patch()
+            else:
+                print ("Invalid bump!!!")
 
 
 def bump_version(repo, directory, bump, opt):
