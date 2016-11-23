@@ -18,7 +18,6 @@ import contextlib
 from semantic_version import Version
 from git import Repo
 from erl_terms import decode as erl_decode
-import re
 
 
 @contextlib.contextmanager
@@ -334,9 +333,9 @@ def bump_auto(version, directory, opt):
     for commit in repo.iter_commits('master'):
         if 'tag' not in commit.name_rev:
             message = commit.message
-            search_major = re.search(r'major', message, re.I)
-            search_minor = re.search(r'minor', message, re.I)
-            search_patch = re.search(r'patch', message, re.I)
+            search_major = re.search(r'\bMajor\b', message, re.I)
+            search_minor = re.search(r'\bMinor\b', message, re.I)
+            search_patch = re.search(r'\bPatch\b', message, re.I)
             if search_major:
                 return version.next_major()
             elif search_minor:
@@ -344,7 +343,7 @@ def bump_auto(version, directory, opt):
             elif search_patch:
                 return version.next_patch()
             else:
-                print ("Invalid bump!!!")
+                problems("Invalid version component")
 
 
 def bump_version(repo, directory, bump, opt):
@@ -477,12 +476,12 @@ def parse_args(parser):
         parser.add_option('--build',
                           dest='build',
                           help='Will include build information '
-                          'in build semver component',
+                               'in build semver component',
                           action='store_true')
         parser.add_option('--pre-build',
                           dest='prebuild',
                           help='Will include build information '
-                          'in pre-release semver component',
+                               'in pre-release semver component',
                           action='store_true')
     else:
         parser.add_option('--dry-run',

@@ -155,14 +155,84 @@ teardown() {
 }
 
 @test "multibump because of git commit containing words major and minor and patch" {
-    commit_to_repo "$REPO" "major foo minor and patch"
+    commit_to_repo "$REPO" "major"
     run avakas_wrapper bump "$REPO" auto
-    echo "output"
     [ "$status" -eq 0 ]
     scan_lines "Version updated from 0.0.1 to 1.0.0"  "${lines[@]}"
     run avakas_wrapper show "$REPO"
     [ "$status" -eq 0 ]
     [ "$output" == "1.0.0" ]
+}
+
+@test "multibump because of git commit containing words major and minor" {
+    commit_to_repo "$REPO" "major"
+    run avakas_wrapper bump "$REPO" auto
+    [ "$status" -eq 0 ]
+    scan_lines "Version updated from 0.0.1 to 1.0.0"  "${lines[@]}"
+    run avakas_wrapper show "$REPO"
+    [ "$status" -eq 0 ]
+    [ "$output" == "1.0.0" ]
+}
+
+@test "multibump because of git commit containing words major and patch" {
+    commit_to_repo "$REPO" "major"
+    run avakas_wrapper bump "$REPO" auto
+    [ "$status" -eq 0 ]
+    scan_lines "Version updated from 0.0.1 to 1.0.0"  "${lines[@]}"
+    run avakas_wrapper show "$REPO"
+    [ "$status" -eq 0 ]
+    [ "$output" == "1.0.0" ]
+}
+
+@test "multibump because of git commit containing words minor and patch" {
+    commit_to_repo "$REPO" "minor"
+    run avakas_wrapper bump "$REPO" auto
+    [ "$status" -eq 0 ]
+    scan_lines "Version updated from 0.0.1 to 0.1.0"  "${lines[@]}"
+    run avakas_wrapper show "$REPO"
+    [ "$status" -eq 0 ]
+    [ "$output" == "0.1.0" ]
+}
+
+@test "multibump because of git commit containing non of the three words" {
+    commit_to_repo "$REPO" "none"
+    run avakas_wrapper bump "$REPO" auto
+    [ "$status" -eq 0 ]
+    scan_lines "Version updated from 0.0.1 to 0.0.1"  "${lines[@]}"
+    run avakas_wrapper show "$REPO"
+    [ "$status" -eq 0 ]
+    [ "$output" == "0.0.1" ]
+}
+
+@test "bump because of git commit containing word amajority to test wildcard characters" {
+    commit_to_repo "$REPO" "none"
+    run "$AVAKAS" bump "$REPO" auto
+    echo "$output"
+    [ "$status" -eq 0 ]
+    scan_lines "Version updated from 0.0.1 to 0.0.1"  "${lines[@]}"
+    run avakas_wrapper show "$REPO"
+    [ "$status" -eq 0 ]
+    [ "$output" == "0.0.1" ]
+}
+
+@test "bump because of git commit containing word aminority to test wildcard characters" {
+    commit_to_repo "$REPO" "none"
+    run avakas_wrapper bump "$REPO" auto
+    [ "$status" -eq 0 ]
+    scan_lines "Version updated from 0.0.1 to 0.0.1"  "${lines[@]}"
+    run avakas_wrapper show "$REPO"
+    [ "$status" -eq 0 ]
+    [ "$output" == "0.0.1" ]
+}
+
+@test "bump because of git commit containing word ampatching to test wildcard characters" {
+    commit_to_repo "$REPO" "none"
+    run avakas_wrapper bump "$REPO" auto
+    [ "$status" -eq 0 ]
+    scan_lines "Version updated from 0.0.1 to 0.0.1"  "${lines[@]}"
+    run avakas_wrapper show "$REPO"
+    [ "$status" -eq 0 ]
+    [ "$output" == "0.0.1" ]
 }
 
 @test "bump a plain version - patch to prerelease" {

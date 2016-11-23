@@ -26,8 +26,8 @@
       <file leaf-file-name="avakas" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/avakas">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="821">
-              <caret line="348" column="0" selection-start-line="348" selection-start-column="0" selection-end-line="348" selection-end-column="0" />
+            <state relative-caret-position="686">
+              <caret line="348" column="45" selection-start-line="348" selection-start-column="45" selection-end-line="348" selection-end-column="45" />
               <folding>
                 <element signature="e#209#246#0" expanded="true" />
               </folding>
@@ -38,8 +38,8 @@
       <file leaf-file-name="plain.bats" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/tests/integration/plain.bats">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="675">
-              <caret line="164" column="23" selection-start-line="164" selection-start-column="23" selection-end-line="164" selection-end-column="23" />
+            <state relative-caret-position="1020">
+              <caret line="244" column="0" selection-start-line="244" selection-start-column="0" selection-end-line="244" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -48,8 +48,8 @@
       <file leaf-file-name="helper.bash" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/tests/integration/helper.bash">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="618">
-              <caret line="169" column="30" selection-start-line="169" selection-start-column="30" selection-end-line="169" selection-end-column="33" />
+            <state relative-caret-position="318">
+              <caret line="96" column="16" selection-start-line="96" selection-start-column="16" selection-end-line="96" selection-end-column="26" />
               <folding />
             </state>
           </provider>
@@ -128,6 +128,7 @@
   <component name="PropertiesComponent">
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="FullScreen" value="true" />
+    <property name="last.edited.regexp" value="major did minor and patch" />
   </component>
   <component name="RunManager" selected="Python.avakas">
     <configuration default="false" name="avakas" type="PythonConfigurationType" factoryName="Python" temporary="true">
@@ -554,24 +555,24 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/tests/integration/helper.bash">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="618">
-          <caret line="169" column="30" selection-start-line="169" selection-start-column="30" selection-end-line="169" selection-end-column="33" />
+        <state relative-caret-position="318">
+          <caret line="96" column="16" selection-start-line="96" selection-start-column="16" selection-end-line="96" selection-end-column="26" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/tests/integration/plain.bats">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="675">
-          <caret line="164" column="23" selection-start-line="164" selection-start-column="23" selection-end-line="164" selection-end-column="23" />
+        <state relative-caret-position="1020">
+          <caret line="244" column="0" selection-start-line="244" selection-start-column="0" selection-end-line="244" selection-end-column="0" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/avakas">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="821">
-          <caret line="348" column="0" selection-start-line="348" selection-start-column="0" selection-end-line="348" selection-end-column="0" />
+        <state relative-caret-position="686">
+          <caret line="348" column="45" selection-start-line="348" selection-start-column="45" selection-end-line="348" selection-end-column="45" />
           <folding>
             <element signature="e#209#246#0" expanded="true" />
           </folding>
