@@ -343,7 +343,7 @@ def bump_auto(version, directory, opt):
             elif search_patch:
                 return version.next_patch()
             else:
-                problems("Invalid version component")
+                problems('Invalid version component')
 
 
 def bump_version(repo, directory, bump, opt):

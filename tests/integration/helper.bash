@@ -97,7 +97,7 @@ commit_to_repo() {
     local REV=$(random_rev "$REPO")
     echo $REV > file
     git add -A
-    git commit -m $MESSAGE
+    git commit -m "${MESSAGE}"
 }
 
 update_repo() {
@@ -167,7 +167,7 @@ scan_lines() {
     local STRING="$1"
     shift
     while [ ! -z "$1" ] ; do
-        if grep -qE "$STRING" <<< "$1" ; then
+        if [ "$1" == "$STRING" ] ; then
             return 0
         fi
         shift

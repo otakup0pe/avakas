@@ -125,8 +125,7 @@ teardown() {
 
 @test "bump because of git commit containing word major" {
     commit_to_repo "$REPO" "major"
-    run "$AVAKAS" bump "$REPO" auto
-    echo "$output"
+    run avakas_wrapper bump "$REPO" auto
     [ "$status" -eq 0 ]
     scan_lines "Version updated from 0.0.1 to 1.0.0"  "${lines[@]}"
     run avakas_wrapper show "$REPO"
@@ -185,52 +184,51 @@ teardown() {
 }
 
 @test "multibump because of git commit containing words minor and patch" {
-    commit_to_repo "$REPO" "minor"
+    commit_to_repo "$REPO" 'minor'
     run avakas_wrapper bump "$REPO" auto
     [ "$status" -eq 0 ]
-    scan_lines "Version updated from 0.0.1 to 0.1.0"  "${lines[@]}"
+    scan_lines "Version updated from 0.0.1 to 0.1.0" "${lines[@]}"
     run avakas_wrapper show "$REPO"
     [ "$status" -eq 0 ]
     [ "$output" == "0.1.0" ]
 }
 
-@test "multibump because of git commit containing non of the three words" {
-    commit_to_repo "$REPO" "none"
-    run avakas_wrapper bump "$REPO" auto
-    [ "$status" -eq 0 ]
-    scan_lines "Version updated from 0.0.1 to 0.0.1"  "${lines[@]}"
-    run avakas_wrapper show "$REPO"
-    [ "$status" -eq 0 ]
-    [ "$output" == "0.0.1" ]
-}
-
-@test "bump because of git commit containing word amajority to test wildcard characters" {
-    commit_to_repo "$REPO" "none"
+@test "return problem because of git commit not containing words major, minor, or patch" {
+    commit_to_repo "$REPO" "commit message with no special words"
     run "$AVAKAS" bump "$REPO" auto
-    echo "$output"
-    [ "$status" -eq 0 ]
-    scan_lines "Version updated from 0.0.1 to 0.0.1"  "${lines[@]}"
-    run avakas_wrapper show "$REPO"
-    [ "$status" -eq 0 ]
-    [ "$output" == "0.0.1" ]
-}
-
-@test "bump because of git commit containing word aminority to test wildcard characters" {
-    commit_to_repo "$REPO" "none"
-    run avakas_wrapper bump "$REPO" auto
-    [ "$status" -eq 0 ]
-    scan_lines "Version updated from 0.0.1 to 0.0.1"  "${lines[@]}"
-    run avakas_wrapper show "$REPO"
+    [ "$status" -eq 1 ]
+    scan_lines "Problem: Invalid version component" "${lines[@]}"
+    run "$AVAKAS" show "$REPO"
     [ "$status" -eq 0 ]
     [ "$output" == "0.0.1" ]
 }
 
-@test "bump because of git commit containing word ampatching to test wildcard characters" {
-    commit_to_repo "$REPO" "none"
-    run avakas_wrapper bump "$REPO" auto
+@test "return problem because of git commit containing similar looking words to test wildcard characters" {
+    commit_to_repo "$REPO" "test for similar looking words like amjority"
+    run "$AVAKAS" bump "$REPO" auto
+    [ "$status" -eq 1 ]
+    scan_lines "Problem: Invalid version component"  "${lines[@]}"
+    run "$AVAKAS" show "$REPO"
     [ "$status" -eq 0 ]
-    scan_lines "Version updated from 0.0.1 to 0.0.1"  "${lines[@]}"
-    run avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.1" ]
+}
+
+@test "return problem because of git commit containing similar looking words to test wildcard characters" {
+    commit_to_repo "$REPO" "test for similar looking words like aminority"
+    run "$AVAKAS" bump "$REPO" auto
+    [ "$status" -eq 1 ]
+    scan_lines "Problem: Invalid version component"  "${lines[@]}"
+    run "$AVAKAS" show "$REPO"
+    [ "$status" -eq 0 ]
+    [ "$output" == "0.0.1" ]
+}
+
+@test "return problem because of git commit containing similar looking words to test wildcard characters" {
+    commit_to_repo "$REPO" "test for similar looking words like ampatching"
+    run "$AVAKAS" bump "$REPO" auto
+    [ "$status" -eq 1 ]
+    scan_lines "Problem: Invalid version component"  "${lines[@]}"
+    run "$AVAKAS" show "$REPO"
     [ "$status" -eq 0 ]
     [ "$output" == "0.0.1" ]
 }
