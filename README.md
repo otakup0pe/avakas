@@ -53,11 +53,11 @@ This mode will automatically update the version based on the input provided. It 
 
 This mode will automatically update the version based on the GIT commit message. It depends on three keywords in commit message.
 
-* 'major' keyword in a git commit message will update the major (left) version component.
-* 'minor' keyword in a git commit message will update the minor (middle) version component.
-* 'patch' keyword in a git commit message will update the (right) version component.
-*  If all the three keywords or possible combinations of any two keywords are present, then it will update the higher priority version component. i.e 'major'>'minor'>'patch'.
-*  If none of the three keywords are present, no version components would be updated.
+* `major` keyword in a git commit message will update the major (left) version component.
+* `minor` keyword in a git commit message will update the minor (middle) version component.
+* `patch` keyword in a git commit message will update the (right) version component.
+*  If all the three keywords or possible combinations of any two keywords are present, then it will update the higher priority version component. i.e `major`>`minor`>`patch`.
+*  If none of the three keywords are present, version would not be updated.
 
 # Arguments
 
