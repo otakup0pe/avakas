@@ -154,7 +154,7 @@ teardown() {
 }
 
 @test "multibump because of git commit containing words major and minor and patch" {
-    commit_to_repo "$REPO" "major"
+    commit_to_repo "$REPO" "major and minor and patch"
     run avakas_wrapper bump "$REPO" auto
     [ "$status" -eq 0 ]
     scan_lines "Version updated from 0.0.1 to 1.0.0"  "${lines[@]}"
@@ -164,7 +164,7 @@ teardown() {
 }
 
 @test "multibump because of git commit containing words major and minor" {
-    commit_to_repo "$REPO" "major"
+    commit_to_repo "$REPO" "major and minor"
     run avakas_wrapper bump "$REPO" auto
     [ "$status" -eq 0 ]
     scan_lines "Version updated from 0.0.1 to 1.0.0"  "${lines[@]}"
@@ -174,7 +174,7 @@ teardown() {
 }
 
 @test "multibump because of git commit containing words major and patch" {
-    commit_to_repo "$REPO" "major"
+    commit_to_repo "$REPO" "major and patch"
     run avakas_wrapper bump "$REPO" auto
     [ "$status" -eq 0 ]
     scan_lines "Version updated from 0.0.1 to 1.0.0"  "${lines[@]}"
@@ -184,7 +184,7 @@ teardown() {
 }
 
 @test "multibump because of git commit containing words minor and patch" {
-    commit_to_repo "$REPO" 'minor'
+    commit_to_repo "$REPO" 'minor and patch'
     run avakas_wrapper bump "$REPO" auto
     [ "$status" -eq 0 ]
     scan_lines "Version updated from 0.0.1 to 0.1.0" "${lines[@]}"
