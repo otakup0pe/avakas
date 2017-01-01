@@ -1,7 +1,7 @@
 avakas
 ======
 
-[![Build Status](https://travis-ci.org/otakup0pe/avakas.svg?branch=master)](https://travis-ci.org/otakup0pe/avakas)[![PyPI](https://img.shields.io/pypi/v/avakas.svg)](https://pypi.python.org/pypi/avakas)[![Maintenance](https://img.shields.io/maintenance/yes/2016.svg)]()
+[![Build Status](https://travis-ci.org/otakup0pe/avakas.svg?branch=master)](https://travis-ci.org/otakup0pe/avakas)[![PyPI](https://img.shields.io/pypi/v/avakas.svg)](https://pypi.python.org/pypi/avakas)[![Maintenance](https://img.shields.io/maintenance/yes/2017.svg)]()
 
 # Overview
 
