@@ -6,3 +6,4 @@ avakas.egg-info
 *.pyo
 .bats*
 .ci-env
+.idea

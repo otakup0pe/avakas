@@ -90,6 +90,16 @@ tag_repo() {
     git tag "$TAG" "$REV"
 }
 
+commit_to_repo() {
+    local REPO="$1"
+    local MESSAGE="$2"
+    cd "$REPO"
+    local REV=$(random_rev "$REPO")
+    echo $REV > file
+    git add -A
+    git commit -m "${MESSAGE}"
+}
+
 update_repo() {
     local REPO="$1"
     cd "$REPO"
@@ -157,7 +167,7 @@ scan_lines() {
     local STRING="$1"
     shift
     while [ ! -z "$1" ] ; do
-        if [ "$1" == "$STRING" ] ; then
+        if grep -qE "$STRING" <<< "$1" ; then
             return 0
         fi
         shift

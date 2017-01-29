@@ -327,6 +327,25 @@ def extract_cookbook_version(directory):
     return Version(vsn_match.group('vsn'))
 
 
+def bump_auto(version, directory, opt):
+    """Bump if the operation is auto based on the keyword in commit."""
+    repo = load_git(directory, opt)
+    for commit in repo.iter_commits('master'):
+        if 'tag' not in commit.name_rev:
+            message = commit.message
+            search_major = re.search(r'\bMajor\b', message, re.I)
+            search_minor = re.search(r'\bMinor\b', message, re.I)
+            search_patch = re.search(r'\bPatch\b', message, re.I)
+            if search_major:
+                return version.next_major()
+            elif search_minor:
+                return version.next_minor()
+            elif search_patch:
+                return version.next_patch()
+            else:
+                problems("Invalid version component")
+
+
 def bump_version(repo, directory, bump, opt):
     """Bump the flavour specific version for a project."""
     flavor = determine_flavor(directory)
@@ -342,7 +361,10 @@ def bump_version(repo, directory, bump, opt):
     else:
         artifact_version = extract_plain_version(directory, opt)
 
-    new_version = transmogrify_version(artifact_version, bump)
+    if bump == 'auto':
+        new_version = bump_auto(artifact_version, directory, opt)
+    else:
+        new_version = transmogrify_version(artifact_version, bump)
 
     if flavor == 'node':
         write_node_version(directory, new_version)
@@ -454,12 +476,12 @@ def parse_args(parser):
         parser.add_option('--build',
                           dest='build',
                           help='Will include build information '
-                          'in build semver component',
+                               'in build semver component',
                           action='store_true')
         parser.add_option('--pre-build',
                           dest='prebuild',
                           help='Will include build information '
-                          'in pre-release semver component',
+                               'in pre-release semver component',
                           action='store_true')
     else:
         parser.add_option('--dry-run',
@@ -497,10 +519,10 @@ def main():
             opt.tag_prefix = 'v'
 
     if operation == 'bump':
-        bump = 'dev'
         if len(args) >= 3:
             bump = args[2].lower()
-            if bump == 'patch' or \
+            if bump == 'auto' or \
+               bump == 'patch' or \
                bump == 'minor' or \
                bump == 'major' or \
                bump == 'pre':
@@ -523,6 +545,7 @@ def main():
 
     usage(parser)
     exit(1)
+
 
 if __name__ == "__main__":
 
