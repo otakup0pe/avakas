@@ -19,9 +19,7 @@ teardown() {
     cd "$REPO"
     touch aaaa
     git add aaaa
-    run "$AVAKAS" set "$REPO" "0.0.2"
-    echo "$output $status"
-    [ "$status" -eq 1 ]
+    avakas_rc 1 set "$REPO" "0.0.2"
     scan_lines "Problem: Git repo dirty." "${lines[@]}"
 }
 

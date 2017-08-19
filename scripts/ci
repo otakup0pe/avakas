@@ -4,26 +4,13 @@
 set -e
 
 # always know where your towel is
-SCRIPT_DIR=$(cd ${0%/*} && pwd)
-CIDIR=${SCRIPT_DIR%/*}
+SCRIPT_DIR=$(cd "${0%/*}" && pwd)
+export CIDIR="${SCRIPT_DIR%/*}"
 
 # constant presence
 BATSGIT="${CIDIR}/.bats-git"
 BATSBIN="${CIDIR}/.bats"
 
-# never not virtualenv
-echo "Checking for virtualenv"
-! which virtuelenv &> /dev/null
-
-if [ -z "$VIRTUAL_ENV" ] ; then
-    if [ ! -d "$CIDIR/.ci-env" ] ; then
-        virtualenv "${CIDIR}/.ci-env"
-    fi
-    . "${CIDIR}/.ci-env/bin/activate"
-fi
-
-# install dependencies
-pip install -r "${CIDIR}/requirements.txt" -r "${CIDIR}/requirements-dev.txt"
 if [ ! -d "$BATSGIT" ] ; then
     git clone --depth 1 https://github.com/sstephenson/bats.git "$BATSGIT"
 fi
@@ -32,9 +19,8 @@ if [ ! -d "$BATSBIN" ] ; then
     ./install.sh "$BATSBIN"
 fi
 
-# so pretty much style guides
-pep8 "${CIDIR}/avakas"
-pylint "${CIDIR}/avakas"
-
+if [ -z "$TRAVIS" ] ; then
+    . "${CIDIR}/.ci-env/bin/activate"
+fi
 # integration tests
 "${CIDIR}/.bats/bin/bats" "${CIDIR}"/tests/integration/*.bats
