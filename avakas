@@ -226,7 +226,7 @@ def load_git(directory, opt):
 
     # we really do not want to be polluting our stdout when showing the version
     with stdout_redirect():
-        repo.remotes[opt.remote].pull()
+        repo.remotes[opt.remote].pull(refspec=opt.branch)
 
     return repo
 

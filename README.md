@@ -48,6 +48,19 @@ This mode will automatically update the version based on the input provided. It 
 * `minor` will update the minor (middle) version component.
 * `patch` will update the patch (right) version component.
 * `pre` will update the prerelase (to the right, separated by a `-`)
+* `auto` will attempt to determine which component to adjust
+
+### Autobump
+
+When the `auto` option is selected, the system will use hints in the git log since the last version bump to determine if the version should be changed. These hints can be specified at any point in the commit message. The hints are specified, prefixed by `bump:`. For example, the following commit message would result in a minor version bump if it is subsequently "autobumped".
+
+```
+$ avakas show .
+0.0.1
+$ git commit -am "hello this is a release\nbump:minor"
+$ avakas bump . auto
+Version updated from 0.0.1 to 0.1.0
+```
 
 # Arguments
 
