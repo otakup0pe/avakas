@@ -60,8 +60,8 @@ def determine_flavor(directory):
         return 'erlang'
     elif os.path.exists("%s/metadata.rb" % directory):
         return 'chef-cookbook'
-    else:
-        return 'plain'
+
+    return 'plain'
 
 
 def read_package_json(directory):
@@ -69,9 +69,11 @@ def read_package_json(directory):
     package_file = "%s/package.json" % directory
     if not os.path.exists(package_file):
         problems("The %s file is missing" % package_file)
-        package_handle = open(package_file, 'r')
-        package_json = json.load(package_handle)
-        package_handle.close()
+
+    package_handle = open(package_file, 'r')
+    package_json = json.load(package_handle)
+    package_handle.close()
+
     return package_json
 
 
@@ -239,9 +241,10 @@ def transmogrify_version(version, bump):
         return version.next_major()
     elif bump == 'pre':
         new = Version(str(version))
-        if len(new.prerelease) == 1:
+        prereleases = len(new.prerelease)
+        if prereleases == 1:
             new.prerelease = (str(int(new.prerelease[0]) + 1))
-        elif len(new.prerelease) == 0:
+        elif prereleases == 0:
             new.prerelease = ('1')
         else:
             problems("Unexpected version prerelease")
@@ -278,7 +281,8 @@ def extract_erlang_version(directory):
     for config in app_config:
         if config[0] == 'vsn':
             return Version(config[1])
-        problems("Something wrong with OTP app file " % app_file)
+
+    problems("Something wrong with OTP app file " % app_file)
 
 
 def extract_ansible_version(repo, opt):
@@ -299,10 +303,10 @@ def extract_ansible_version(repo, opt):
 
     tags = sorted(unsorted_tags)
     tags.reverse()
-    if len(tags) > 0:
+    if tags:
         return Version(tags[0])
-    else:
-        return None
+
+    return None
 
 
 def extract_plain_version(directory, opt):
@@ -327,6 +331,36 @@ def extract_cookbook_version(directory):
     return Version(vsn_match.group('vsn'))
 
 
+def bump_auto(artifact_version, repo, opt):
+    """Will go through the Git history until the last version bump
+    and look for hints that we want to "automatically" bump
+    our version"""
+    vsn = None
+    reg = re.compile(r'bump:(?P<bump>(patch|minor|major)).*', re.MULTILINE)
+    for commit in repo.iter_commits(opt.branch):
+        # we go iterate back to the last time we bumped the version
+        if commit.message.startswith('Version bumped to'):
+            break
+
+        res = reg.search(commit.message)
+        if res:
+            bump = res.group('bump')
+            if not vsn:
+                vsn = bump
+            elif vsn == 'patch' and bump == 'minor':
+                vsn = 'minor'
+            elif vsn == 'patch' and bump == 'major':
+                vsn = 'major'
+            elif vsn == 'minor' and bump == 'major':
+                vsn = 'major'
+
+    if not vsn:
+        print("No auto bump indicators", file=sys.stderr)
+        sys.exit(0)
+
+    return transmogrify_version(artifact_version, vsn)
+
+
 def bump_version(repo, directory, bump, opt):
     """Bump the flavour specific version for a project."""
     flavor = determine_flavor(directory)
@@ -342,7 +376,10 @@ def bump_version(repo, directory, bump, opt):
     else:
         artifact_version = extract_plain_version(directory, opt)
 
-    new_version = transmogrify_version(artifact_version, bump)
+    if bump == 'auto':
+        new_version = bump_auto(artifact_version, repo, opt)
+    else:
+        new_version = transmogrify_version(artifact_version, bump)
 
     if flavor == 'node':
         write_node_version(directory, new_version)
@@ -503,6 +540,7 @@ def main():
             if bump == 'patch' or \
                bump == 'minor' or \
                bump == 'major' or \
+               bump == 'auto' or \
                bump == 'pre':
                 repo = load_git(directory, opt)
                 version = bump_version(repo, directory, bump, opt)

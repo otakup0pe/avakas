@@ -12,6 +12,5 @@ teardown() {
 }
 
 @test "help is ok" {
-    run "$AVAKAS" help
-    [ "$status" -eq 0 ]
+    avakas_wrapper help
 }

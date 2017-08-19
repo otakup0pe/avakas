@@ -14,9 +14,14 @@ function shared_setup() {
         mkdir -p "$AVAKAS_TEST_DIR"
     fi
 
-    if [ -z "$AVAKAS" ] ; then
-        AVAKAS="${BATS_TEST_DIRNAME}/../../avakas"
-    fi
+    # hey git internal env vars
+    unset GIT_AUTHOR_DATE
+    unset GIT_AUTHOR_EMAIL
+    unset GIT_AUTHOR_NAME
+    unset GIT_DIR
+    unset GIT_EDITOR
+    unset GIT_INDEX_FILE
+    unset GIT_PREFIX
 }
 
 shared_teardown() {
@@ -134,7 +139,15 @@ cookbook_version() {
 }
 
 avakas_wrapper() {
-    "$AVAKAS" $* 2> /dev/null
+    avakas_rc 0 $*
+}
+
+avakas_rc() {
+    RC="$1"
+    shift
+    run coverage run -a "${CIDIR}/avakas" $* 2> /dev/null
+    echo "$output"
+    [ "$status" -eq "$RC" ]
 }
 
 template_skeleton() {
@@ -163,4 +176,12 @@ scan_lines() {
         shift
     done
     return 1
+}
+
+commit_message() {
+    local REPO="$1"
+    local MSG="$2"
+    echo "some kinda ${RANDOM}" > "foo"
+    git add "foo"
+    git commit -qm "$MSG" "foo"
 }
