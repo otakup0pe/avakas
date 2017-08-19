@@ -22,7 +22,7 @@ test: testenv
 	test -z $(TRAVIS) && coverage erase || true
 
 clean:
-	rm -rf .bats-git .bats .ci-env avakas.egg-info dist build
+	rm -rf .bats-git .bats .ci-env avakas.egg-info dist build .coverage
 
 container:
 	./scripts/container

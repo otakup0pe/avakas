@@ -40,4 +40,3 @@ teardown() {
     avakas_rc 1 show "$REPO" --tag-prefix aaa
     scan_lines "Problem: Cannot specify a tag prefix with an Ansible Role" "${lines[@]}"
 }
-

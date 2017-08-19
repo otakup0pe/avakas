@@ -145,7 +145,10 @@ avakas_wrapper() {
 avakas_rc() {
     RC="$1"
     shift
-    run coverage run -a "${CIDIR}/avakas" $* 2> /dev/null
+    OWD="$(pwd)"
+    cd "$CIDIR"
+    run coverage run -a --include "avakas" "${CIDIR}/avakas" $* 2> /dev/null
+    cd "$OWD"
     echo "$output"
     [ "$status" -eq "$RC" ]
 }
