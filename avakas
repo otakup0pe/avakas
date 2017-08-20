@@ -157,9 +157,25 @@ def git_push(repo, opt, tag=None):
         problems("Unexpected git error: %s" % info.summary)
 
 
+def grok_vsn_file(directory):
+    """Determines what our actual file to be modified is"""
+    flav = determine_flavor(directory)
+    vsn_file = None
+    if flav == 'node':
+        vsn_file = "%s/package.json" % directory
+    elif flav == 'erlang':
+        app_file = glob("%s/src/*.app.src" % directory)
+        vsn_file = "%s/%s" % (directory, app_file)
+    elif flav == 'chef-cookbook':
+        vsn_file = '%s/metadata.rb' % directory
+    elif flav != 'ansible':
+        vsn_file = "%s/version" % directory
+
+    return vsn_file
+
+
 def write_git(repo, directory, vsn_str, opt):
     """Will commit and push the version file and optionally tags."""
-    flav = determine_flavor(directory)
     if isinstance(vsn_str, str):
         version = Version(vsn_str)
     else:
@@ -180,20 +196,16 @@ def write_git(repo, directory, vsn_str, opt):
 
         return
 
-    vsn_file = None
-    if flav == 'node':
-        vsn_file = "%s/package.json" % directory
-    elif flav == 'erlang':
-        app_file = glob("%s/src/*.app.src" % directory)
-        vsn_file = "%s/%s" % (directory, app_file)
-    elif flav == 'chef-cookbook':
-        vsn_file = '%s/metadata.rb' % directory
-    elif flav != 'ansible':
-        vsn_file = "%s/version" % directory
+    vsn_file = grok_vsn_file(directory)
 
     if vsn_file:
         repo.index.add([vsn_file])
-        repo.index.commit("Version bumped to %s" % vsn_str)
+        skip_hooks = True
+        if opt.with_hooks:
+            skip_hooks = False
+
+        repo.index.commit("Version bumped to %s" % vsn_str,
+                          skip_hooks=skip_hooks)
         git_push(repo, opt)
 
     if not version.build:
@@ -486,6 +498,12 @@ def parse_args(parser):
                       dest='filename',
                       help='File name. Used for fallback versioning.',
                       default='version')
+
+    if operation == 'set' or operation == 'bump':
+        parser.add_option('--with-hooks',
+                          dest='with_hooks',
+                          help='Run git hooks',
+                          default=False)
 
     if operation == 'show':
         parser.add_option('--build',
