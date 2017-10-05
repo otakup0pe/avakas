@@ -14,12 +14,12 @@ package:
 	python setup.py sdist
 
 test: testenv
-	coverage erase
+	$(CI_ENV)coverage erase
 	$(CI_ENV)pep8 "avakas"
 	$(CI_ENV)pylint "avakas"
 	./scripts/ci
-	coverage report -m
-	test -z $(TRAVIS) && coverage erase || true
+	$(CI_ENV)coverage report -m
+	test -z $(TRAVIS) && $(CI_ENV)coverage erase || true
 
 clean:
 	rm -rf .bats-git .bats .ci-env avakas.egg-info dist build .coverage
