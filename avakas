@@ -437,6 +437,8 @@ def append_prebuild_version(git_str, artifact_version):
         artifact_version.prerelease.append(os.environ['BUILD_NUMBER'])
     elif 'TRAVIS_BUILD_NUMBER' in os.environ:
         artifact_version.prerelease.append(os.environ['TRAVIS_BUILD_NUMBER'])
+    elif 'CIRCLE_BUILD_NUM' in os.environ:
+        artifact_version.prerelease.append(os.environ['CIRCLE_BUILD_NUM'])
 
 
 def append_build_version(git_str, artifact_version):
