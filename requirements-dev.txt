@@ -1,5 +1,6 @@
-pep8
+pycodestyle
 pylint
 nose
 loremipsum
 coverage
+tox

@@ -12,7 +12,6 @@ if [ -z "$ACTION" ] ; then
     exit 1
 fi
 
-ARGS="$*"
 if [ "$ACTION" == "bump" ] || [ "$ACTION" == "set" ] ; then
     mkdir -p "${HOME}/.ssh"
     if [ -z "$SSH_AUTH_SOCK" ] ; then
@@ -30,4 +29,4 @@ if [ -e "/etc/avakas/avakasrc" ] ; then
     # shellcheck disable=SC1091
     source /etc/avakas/avakasrc
 fi
-/usr/local/bin/avakas $ARGS
+exec /usr/local/bin/avakas "$@"

@@ -47,21 +47,22 @@ def problems(msg):
     """Simple give-up and error out function."""
     print("Problem: %s" % msg,
           file=sys.stderr)
-    exit(1)
+    sys.exit(1)
 
 
 def determine_flavor(directory):
     """Determines the project flavour for the given directory."""
+    flavor = 'plain'
     if os.path.exists("%s/package.json" % directory):
-        return 'node'
+        flavor = 'node'
     elif os.path.exists("%s/meta/main.yml" % directory):
-        return 'ansible'
+        flavor = 'ansible'
     elif len(glob("%s/src/*.app.src" % directory)) == 1:
-        return 'erlang'
+        flavor = 'erlang'
     elif os.path.exists("%s/metadata.rb" % directory):
-        return 'chef-cookbook'
+        flavor = 'chef-cookbook'
 
-    return 'plain'
+    return flavor
 
 
 def read_package_json(directory):
@@ -245,10 +246,11 @@ def load_git(directory, opt):
 
 def transmogrify_version(version, bump):
     """Update the version string."""
+    new_version = None
     if bump == 'patch':
-        return version.next_patch()
+        new_version = version.next_patch()
     elif bump == 'minor':
-        return version.next_minor()
+        new_version = version.next_minor()
     elif bump == 'major':
         return version.next_major()
     elif bump == 'pre':
@@ -261,9 +263,14 @@ def transmogrify_version(version, bump):
         else:
             problems("Unexpected version prerelease")
 
-        return new
-    else:
+        new_version = new
+
+    if not new_version:
         problems("Invalid version component")
+        # problems should be an exeception
+        return None
+
+    return new_version
 
 
 def get_repo(directory):
@@ -295,6 +302,8 @@ def extract_erlang_version(directory):
             return Version(config[1])
 
     problems("Something wrong with OTP app file " % app_file)
+    # problems should be an exeception
+    return None
 
 
 def extract_ansible_version(repo, opt):
@@ -527,11 +536,11 @@ def parse_args(parser):
     (opt, args) = parser.parse_args()
     if operation == 'help':
         usage(parser)
-        exit(0)
+        sys.exit(0)
     else:
         if len(args) < 2:
             usage(parser)
-            exit(1)
+            sys.exit(1)
 
     return (operation, opt, args)
 
@@ -565,27 +574,27 @@ def main():
                 repo = load_git(directory, opt)
                 version = bump_version(repo, directory, bump, opt)
                 write_git(repo, directory, version, opt)
-                exit(0)
+                sys.exit(0)
     elif operation == 'show':
         if opt.build and opt.prebuild:
             problems('Cannot specify both --build and --prebuild')
         show_version(directory, opt)
-        exit(0)
+        sys.exit(0)
     elif operation == 'set':
         if len(args) == 3:
             repo = load_git(directory, opt)
             version = args[2]
             set_version(directory, version, opt)
             write_git(repo, directory, version, opt)
-            exit(0)
+            sys.exit(0)
 
     usage(parser)
-    exit(1)
+    sys.exit(1)
+
 
 if __name__ == "__main__":
-
     if len(sys.argv) < 2:
         usage()
-        exit(1)
+        sys.exit(1)
 
     main()
