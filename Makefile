@@ -5,7 +5,7 @@ endif
 all: test package
 
 testenv:
-	test -z $(CI) && (test -d .ci-env || ( mkdir .ci-env && virtualenv .ci-env )) || true
+	test -z $(CI) && (test -d .ci-env || ( mkdir .ci-env && virtualenv -p python3 .ci-env )) || true
 	test -z $(CI) && \
 		(echo "Outside CI" && .ci-env/bin/pip install -r requirements.txt -r requirements-dev.txt --upgrade) || \
 		(echo "Within CI" && pip install -r requirements.txt -r requirements-dev.txt)
