@@ -38,6 +38,7 @@ fake_file() {
 config_repo() {
     local REPO="$1"
     cd "$REPO"
+    git config pull.rebase false
     git config user.email "nobody@example.com"
     git config user.name "some user"
 }
