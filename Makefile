@@ -10,10 +10,6 @@ testenv:
 		(echo "Outside CI" && .ci-env/bin/pip install -r requirements.txt -r requirements-dev.txt --upgrade) || \
 		(echo "Within CI" && pip install -r requirements.txt -r requirements-dev.txt)
 
-
-test -d .ci-env || ( mkdir .ci-env && virtualenv .ci-env )
-	.ci-env/bin/pip install -r requirements.txt -r requirements-dev.txt --upgrade
-
 package:
 	python setup.py sdist
 
