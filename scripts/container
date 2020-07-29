@@ -15,7 +15,7 @@ docker build \
        -t "otakup0pe/avakas:${VSN}" .
 docker push  "otakup0pe/avakas:${VSN}"
 
-if [ ! -z "$LATEST" ] ; then
+if [ -n "$LATEST" ] ; then
     docker tag "otakup0pe/avakas:${VSN}" "otakup0pe/avakas:latest"
     docker push "otakup0pe/avakas:latest"
 fi

@@ -1,4 +1,4 @@
-FROM python:2.7
+FROM python:3.8-alpine
 
 MAINTAINER 'Jonathan Freedman <jonafree@gmail.com>'
 ARG VERSION=0.0.0
