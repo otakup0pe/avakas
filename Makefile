@@ -1,9 +1,17 @@
-CI_ENV=$(shell pwd)/.ci-env/bin/
+ifndef CI
+	CI_ENV=$(shell pwd)/.ci-env/bin/
+endif
 
 all: test package
 
 testenv:
-	test -d .ci-env || ( mkdir .ci-env && virtualenv .ci-env )
+	test -z $(CI) && (test -d .ci-env || ( mkdir .ci-env && virtualenv .ci-env )) || true
+	test -z $(CI) && \
+		(echo "Outside CI" && .ci-env/bin/pip install -r requirements.txt -r requirements-dev.txt --upgrade) || \
+		(echo "Within CI" && pip install -r requirements.txt -r requirements-dev.txt)
+
+
+test -d .ci-env || ( mkdir .ci-env && virtualenv .ci-env )
 	.ci-env/bin/pip install -r requirements.txt -r requirements-dev.txt --upgrade
 
 package:
