@@ -1,0 +1,19 @@
+name: "test"
+
+on:
+  push:
+    branches:
+      - "mainline"
+  pull_request:
+    branches:
+      - "mainline"
+
+jobs:
+  build:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "actions/checkout@v2"
+        with:
+          fetch-depth: 1
+      - name: "run tests"
+        run: "make test"
