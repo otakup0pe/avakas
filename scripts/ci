@@ -19,7 +19,7 @@ if [ ! -d "$BATSBIN" ] ; then
     ./install.sh "$BATSBIN"
 fi
 
-if [ -z "$TRAVIS" ] ; then
+if [ -z "$CI" ] ; then
     . "${CIDIR}/.ci-env/bin/activate"
 fi
 # integration tests
