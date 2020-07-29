@@ -1,14 +1,10 @@
-ifndef TRAVIS
-	CI_ENV=$(shell pwd)/.ci-env/bin/
-endif
+CI_ENV=$(shell pwd)/.ci-env/bin/
 
 all: test package
 
 testenv:
-	test -z $(TRAVIS) && (test -d .ci-env || ( mkdir .ci-env && virtualenv .ci-env )) || true
-	test -z $(TRAVIS) && \
-		(echo "Non Travis" && .ci-env/bin/pip install -r requirements.txt -r requirements-dev.txt --upgrade) || \
-		(echo "Travis" && pip install -r requirements.txt -r requirements-dev.txt)
+	test -d .ci-env || ( mkdir .ci-env && virtualenv .ci-env )
+	.ci-env/bin/pip install -r requirements.txt -r requirements-dev.txt --upgrade
 
 package:
 	python setup.py sdist

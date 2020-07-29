@@ -245,25 +245,27 @@ def load_git(directory, opt):
 
 def transmogrify_version(version, bump):
     """Update the version string."""
+    new_version = None
     if bump == 'patch':
-        return version.next_patch()
+        new_version = version.next_patch()
     elif bump == 'minor':
-        return version.next_minor()
+        new_version = version.next_minor()
     elif bump == 'major':
-        return version.next_major()
+        new_version = version.next_major()
     elif bump == 'pre':
-        new = Version(str(version))
-        prereleases = len(new.prerelease)
+        new_version = Version(str(version))
+        prereleases = len(new_version.prerelease)
         if prereleases == 1:
-            new.prerelease = (str(int(new.prerelease[0]) + 1))
+            new_version.prerelease = (str(int(new_version.prerelease[0]) + 1))
         elif prereleases == 0:
-            new.prerelease = ('1')
+            new_version.prerelease = ('1')
         else:
             problems("Unexpected version prerelease")
 
-        return new
     else:
         problems("Invalid version component")
+
+    return new_version
 
 
 def get_repo(directory):
@@ -290,11 +292,15 @@ def extract_erlang_version(directory):
     erl_terms = erl_decode(version_handle.read())
     version_handle.close()
     app_config = erl_terms[0][2]
+    erlang_version = None
     for config in app_config:
         if config[0] == 'vsn':
-            return Version(config[1])
+            erlang_version = Version(config[1])
 
-    problems("Something wrong with OTP app file " % app_file)
+    if not erlang_version:
+        problems("Something wrong with OTP app file " % app_file)
+
+    return erlang_version
 
 
 def extract_ansible_version(repo, opt):
