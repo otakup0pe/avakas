@@ -48,7 +48,7 @@ jobs:
             echo ssh-add - <<< "$DEPLOY_KEY"
             mkdir -p ~/.ssh/
             ssh-keyscan github.com >> ~/.ssh/known_hosts
-            ./avakas bump . auto
+            ./avakas bump . auto --branch=mainline
             ssh-agent -k
   publish:
     if: startsWith(github.ref, 'refs/tags')
