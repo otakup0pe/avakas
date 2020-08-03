@@ -24,9 +24,7 @@ jobs:
         with:
           python-version: "${{ matrix.python-version }}"
       - name: "run tests"
-        run: |
-          echo "blah blah ${{github.ref}}"
-          make test
+        run: "make test"
   maybe_bump:
     if: github.ref == 'refs/heads/mainline'
     runs-on: "ubuntu-latest"
@@ -45,7 +43,7 @@ jobs:
             git config user.name "An Automaton"
             git remote set-url origin "$(git config --get remote.origin.url | sed 's#http.*com/#git@github.com:#g')"
             eval `ssh-agent -t 60 -s`
-            echo "$DEPLOY_KEY" | ssh-add -
+            echo ssh-add - <<< "$DEPLOY_KEY"
             mkdir -p ~/.ssh/
             ssh-keyscan github.com >> ~/.ssh/known_hosts
             ./avakas bump . auto
