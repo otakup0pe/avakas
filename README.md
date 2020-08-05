@@ -47,7 +47,7 @@ This mode will automatically update the version based on the input provided. It 
 * `major` will update the major (left) version component.
 * `minor` will update the minor (middle) version component.
 * `patch` will update the patch (right) version component.
-* `pre` will update the prerelase (to the right, separated by a `-`)
+* `pre` will update the prerelease (to the right, separated by a `-`)
 * `auto` will attempt to determine which component to adjust
 
 ### Autobump
