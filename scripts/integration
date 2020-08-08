@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+# prudence above all else
+set -e
+
+# always know where your towel is
+SCRIPT_DIR=$(cd "${0%/*}" && pwd)
+export ROOTDIR="${SCRIPT_DIR%/*}"
+
+# constant presence
+BATSGIT="${ROOTDIR}/.bats-git"
+BATSBIN="${ROOTDIR}/.bats"
+
+if [ ! -d "$BATSGIT" ] ; then
+    git clone --depth 1 https://github.com/sstephenson/bats.git "$BATSGIT"
+fi
+if [ ! -d "$BATSBIN" ] ; then
+    cd "$BATSGIT"
+    ./install.sh "$BATSBIN"
+fi
+
+if [ -z "$CI" ] ; then
+    . "${ROOTDIR}/.ci-env/bin/activate"
+fi
+
+# from http://mywiki.wooledge.org/BashFAQ/026
+shuffle_tests() {
+   local i tmp size max rand
+
+   size=${#EXEC_TESTS[*]}
+   for ((i=size-1; i>0; i--)); do
+      # $RANDOM % (i+1) is biased because of the limited range of $RANDOM
+      # Compensate by using a range which is a multiple of the rand modulus.
+
+      max=$(( 32768 / (i+1) * (i+1) ))
+      while (( (rand=$RANDOM) >= max )); do :; done
+      rand=$(( rand % (i+1) ))
+      tmp=${EXEC_TESTS[i]} EXEC_TESTS[i]=${EXEC_TESTS[rand]} EXEC_TESTS[rand]=$tmp
+   done
+}
+
+if [ "$#" == 1 ] ; then
+    TEST="$1"
+fi
+
+export CIDIR="$ROOTDIR"
+if [ -z "$TEST" ] ; then
+    EXEC_TESTS=()
+    for a_test in "${ROOTDIR}/tests/integration/"*.bats ; do
+        EXEC_TESTS=(${EXEC_TESTS[@]} "$a_test")
+    done
+    shuffle_tests
+    # integration tests
+    "${ROOTDIR}/.bats/bin/bats" "${EXEC_TESTS[@]}"
+else
+    "${ROOTDIR}/.bats/bin/bats" "${ROOTDIR}/tests/integration/${TEST}.bats"
+fi
