@@ -23,6 +23,3 @@ test: testenv
 
 clean:
 	rm -rf .bats-git .bats .ci-env avakas.egg-info dist build .coverage
-
-container:
-	./scripts/container

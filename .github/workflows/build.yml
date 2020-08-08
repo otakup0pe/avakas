@@ -27,6 +27,11 @@ jobs:
           python-version: "${{ matrix.python-version }}"
       - name: "run tests"
         run: "make test"
+      - name: "build container"
+        uses: "docker/build-push-action@v1"
+        with:
+          push: false
+          tags: "test"
   maybe_bump:
     if: github.ref == 'refs/heads/mainline'
     runs-on: "ubuntu-latest"
