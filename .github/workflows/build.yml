@@ -27,6 +27,12 @@ jobs:
           python-version: "${{ matrix.python-version }}"
       - name: "run tests"
         run: "make test"
+      - name: "build container"
+        if: matrix.python-version == '3.8'
+        uses: "docker/build-push-action@v1"
+        with:
+          push: false
+          tags: "test"
   maybe_bump:
     if: github.ref == 'refs/heads/mainline'
     runs-on: "ubuntu-latest"
@@ -71,3 +77,11 @@ jobs:
         with:
           user: "__token__"
           password: "${{ secrets.PYPI_TOKEN }}"
+      - name: "Build and push docker bits"
+        uses: "docker/build-push-action@v1"
+        with:
+          username: "${{ secrets.DOCKER_USER }}"
+          password: "${{ secrets.DOCKER_PASSWORD }}"
+          repository: "otakup0pe/avakas"
+          tag_with_ref: true
+          tags: "latest"
