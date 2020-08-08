@@ -12,6 +12,7 @@ import os
 import re
 import json
 import sys
+from datetime import datetime
 from optparse import OptionParser
 from glob import glob
 import contextlib
@@ -433,17 +434,51 @@ def set_version(directory, version, opt):
     print("Version set to %s" % version)
 
 
-def append_prebuild_version(git_str, artifact_version):
-    """Append the prebuild version component if so desired."""
-    if artifact_version.prerelease:
-        artifact_version.prerelease = artifact_version.prerelease \
-                                      + (git_str,)
-    else:
-        artifact_version.prerelease = [git_str]
+def ci_build_meta():
+    """Return any CI system specific build metadata"""
+    ci_version = None
     if 'BUILD_NUMBER' in os.environ:
-        artifact_version.prerelease.append(os.environ['BUILD_NUMBER'])
+        ci_version = os.environ['BUILD_NUMBER']
     elif 'TRAVIS_BUILD_NUMBER' in os.environ:
-        artifact_version.prerelease.append(os.environ['TRAVIS_BUILD_NUMBER'])
+        ci_version = os.environ['TRAVIS_BUILD_NUMBER']
+    elif 'CIRCLE_BUILD_NUM' in os.environ:
+        ci_version = os.environ['CIRCLE_BUILD_NUM']
+    elif ('GITHUB_RUN_ID' in os.environ) and \
+         ('GITHUB_RUN_NUMBER' in os.environ):
+        ci_version = "%s.%s" % (os.environ['GITHUB_RUN_ID'],
+                                os.environ['GITHUB_RUN_NUMBER'])
+
+    return ci_version
+
+
+def prebuild_meta():
+    """Generate pre-build metadata"""
+    time_fmt = "%Y%m%d%H%M%S"
+    now_str = datetime.utcnow().strftime(time_fmt)
+    return now_str
+
+
+def append_prebuild_version(opt, git_str, artifact_version):
+    """Append the prebuild version component if so desired."""
+    if not (opt.prebuild_prefix or opt.prebuild_date):
+        if artifact_version.prerelease:
+            artifact_version.prerelease = artifact_version.prerelease \
+                                          + (git_str,)
+        else:
+            artifact_version.prerelease = (git_str,)
+
+        ci_version = ci_build_meta()
+        if ci_version:
+            artifact_version.prerelease = artifact_version.prerelease \
+                                          + (ci_version,)
+    else:
+        if opt.prebuild_prefix:
+            artifact_version.prerelease = artifact_version.prerelease \
+                                          + (opt.prebuild_prefix,)
+
+        if opt.prebuild_date:
+            artifact_version.prerelease = artifact_version.prerelease \
+                                          + (prebuild_meta(),)
 
 
 def append_build_version(git_str, artifact_version):
@@ -452,11 +487,12 @@ def append_build_version(git_str, artifact_version):
         artifact_version.build = artifact_version.build \
                                  + (git_str,)
     else:
-        artifact_version.build = [git_str]
-    if 'BUILD_NUMBER' in os.environ:
-        artifact_version.build.append(os.environ['BUILD_NUMBER'])
-    elif 'TRAVIS_BUILD_NUMBER' in os.environ:
-        artifact_version.build.append(os.environ['TRAVIS_BUILD_NUMBER'])
+        artifact_version.build = (git_str,)
+
+    ci_version = ci_build_meta()
+    if ci_version:
+        artifact_version.build = artifact_version.build \
+                                 + (ci_version,)
 
 
 def show_version(directory, opt):
@@ -481,7 +517,7 @@ def show_version(directory, opt):
     if opt.build:
         append_build_version(git_str, artifact_version)
     if opt.prebuild:
-        append_prebuild_version(git_str, artifact_version)
+        append_prebuild_version(opt, git_str, artifact_version)
 
     print("%s" % str(artifact_version))
 
@@ -520,9 +556,19 @@ def parse_args(parser):
                           action='store_true')
         parser.add_option('--pre-build',
                           dest='prebuild',
-                          help='Will include build information '
-                          'in pre-release semver component',
+                          help='Will include prebuild information. If '
+                          ' no other prebuild options are specified '
+                          ' then it will simply use the build info in place.',
                           action='store_true')
+        parser.add_option('--pre-build-date',
+                          dest='prebuild_date',
+                          help='Include a string representation of the '
+                          'current date, down to the second, as part '
+                          'of the prebuild.',
+                          action='store_true')
+        parser.add_option('--pre-build-prefix',
+                          dest='prebuild_prefix',
+                          help='Use the given string as a prebuild prefix')
     else:
         parser.add_option('--dry-run',
                           dest='dry',
@@ -568,8 +614,9 @@ def main():
                 write_git(repo, directory, version, opt)
                 sys.exit(0)
     elif operation == 'show':
-        if opt.build and opt.prebuild:
-            problems('Cannot specify both --build and --prebuild')
+        if opt.build and opt.prebuild and not \
+           (opt.prebuild_prefix or opt.prebuild_date):
+            problems('Cannot specify --build with empty --prebuild')
         show_version(directory, opt)
         sys.exit(0)
     elif operation == 'set':

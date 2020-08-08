@@ -2,8 +2,11 @@
 
 function shared_setup() {
     # we do not want this during tests
-    if [ ! -z "$TRAVIS_BUILD_NUMBER" ] ; then
-        unset TRAVIS_BUILD_NUMBER
+    if [ -n "$GITHUB_RUN_ID" ] ; then
+        unset GITHUB_RUN_ID
+    fi
+    if [ -n "$GITHUB_RUN_NUMBER" ] ; then
+        unset GITHUB_RUN_NUMBER
     fi
     if [ -z "$AVAKAS_TEST_DIR" ] ; then
         AVAKAS_TEST_DIR="${BATS_TMPDIR}"
@@ -53,7 +56,7 @@ fake_repo() {
     FILES="${FILES} $(fake_file "$REPO")"
     git add $FILES
     git commit -qm "some ${RANDOM} message" $FILES
-    echo $REPO
+    echo "$REPO"
 }
 
 clone_repo() {
@@ -61,7 +64,7 @@ clone_repo() {
     local REPO="${AVAKAS_TEST_DIR}/briefcase-${BATS_TEST_NAME}-${RANDOM}"
     git clone -q "$ORIGIN" "$REPO"
     config_repo "$REPO"
-    echo $REPO
+    echo "$REPO"
 }
 
 origin_repo() {
@@ -75,7 +78,7 @@ current_rev() {
     local REPO="$1"
     cd "$REPO"
     local REV=$(git rev-parse --verify HEAD | cut -c 1-8)
-    echo $REV
+    echo "$REV"
 }
 
 random_rev() {

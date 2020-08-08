@@ -17,7 +17,7 @@ test: testenv
 	$(CI_ENV)coverage erase
 	$(CI_ENV)pep8 "avakas"
 	$(CI_ENV)pylint "avakas"
-	./scripts/ci
+	./scripts/integration
 	$(CI_ENV)coverage report -m
 	test -z $(TRAVIS) && $(CI_ENV)coverage erase || true
 
