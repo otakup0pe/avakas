@@ -487,11 +487,12 @@ def append_build_version(git_str, artifact_version):
         artifact_version.build = artifact_version.build \
                                  + (git_str,)
     else:
-        artifact_version.build = [git_str]
+        artifact_version.build = (git_str,)
 
     ci_version = ci_build_meta()
     if ci_version:
-        artifact_version.build.append(ci_version)
+        artifact_version.build = artifact_version.build \
+                                 + (ci_version,)
 
 
 def show_version(directory, opt):
