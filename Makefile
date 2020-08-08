@@ -23,3 +23,8 @@ test: testenv
 
 clean:
 	rm -rf .bats-git .bats .ci-env avakas.egg-info dist build .coverage
+
+container:
+	docker build \
+		--tag otakup0pe/avakas:local \
+		.
