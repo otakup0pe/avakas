@@ -8,6 +8,8 @@ ENV SSH_SCAN_HOST="github.com"
 LABEL license="MIT"
 LABEL version="${VERSION}"
 
+RUN apk add git
+
 RUN mkdir "/etc/avakas"
 
 ADD . /tmp/avakas
