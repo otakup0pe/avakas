@@ -28,6 +28,8 @@ The avakas tool supports the following types of version files
 
 This mode will return the current version for a given project. The following will show the current Public API version. This operation supports an additional `--build` argument, which will cause it to extend the version set in source control with build-time metadata. It also supports the `--pre-build` argument, which does the same thing on top of the prerelease field, because all kinds of package management systems do not actually support the build semantic version component.
 
+It is possible to override this default `pre-build` behavior. The `--pre-build-date` option will include the current date (down to the second) as a string. The `--pre-build-prefix=foo` option will include a string prefix. It is possible to include both pre-build _and_ build information, but only if you specify a prefix or include the date in prebuild.
+
 
 ```shell
 avakas show $HOME/projects/hal9000
