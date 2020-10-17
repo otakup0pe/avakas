@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """avakas
 
 The avakas tool is meant as an interface around version
@@ -8,324 +7,19 @@ For more information see https://github.com/otakup0pe/avakas
 """
 
 from __future__ import print_function
-from functools import cmp_to_key
+
 import os
 import re
-import json
 import sys
 from datetime import datetime
 from optparse import OptionParser
-from glob import glob
 import contextlib
-import subprocess
-from semantic_version import Version, compare as semver_compare
+
+from semantic_version import Version
+
 from git import Repo
-from erl_terms import decode as erl_decode
 
-
-class AvakasError(Exception):
-    """
-    Basic Avakas Error
-    """
-
-
-class Avakas():
-    """
-    Main instance of Avakas
-    """
-    project_flavors = {}
-
-    def __init__(self, **kwargs):
-        self.directory = kwargs.get('directory', os.getcwd())
-        self.flavor = kwargs.get('flavor', self.__determine_flavor(**kwargs))
-
-    @classmethod
-    def __determine_flavor(cls, **kwargs):
-        """
-        Determines the project flavor for a given directory
-        """
-
-        matched = [f for n, f
-                   in Avakas.project_flavors.items()
-                   if f(**kwargs).guess_flavor()]
-
-        if len(matched) == 1:
-            project = matched[0](**kwargs)
-        elif len(matched) == 0:
-            project = Avakas.project_flavors['default'](**kwargs)
-        else:
-            matched_names = [f.PROJECT_TYPE for f in matched]
-            print("Multiple project flavor matches: %s" %
-                  ", ".join(matched_names))
-            sys.exit(1)
-
-        return project
-
-    def get_version(self):
-        """
-        Get version operation
-        """
-
-    def set_version(self, version):
-        """
-        Set version operation
-        """
-
-
-def register_flavor(flavor):
-    """
-    Registers a Avakas Project Flavor
-    Used for future language/project expansions
-    """
-    def wrapper(project):
-        Avakas.project_flavors[flavor] = project
-        return project
-    return wrapper
-
-
-@register_flavor('default')
-class AvakasProject():
-    """
-    Default Avakas Project Flavor
-    """
-    PROJECT_TYPE = 'default'
-
-    def __init__(self, **kwargs):
-        self.options = kwargs.get('opt', {})
-        self.tag_prefix = self.options.get('tag_prefix', 'v')
-        self.version_filename = self.options.get('filename', 'version')
-        if self.version_filename is None:
-            self.version_filename = 'version'
-        self.directory = kwargs.get('directory', os.getcwd())
-
-    @classmethod
-    def guess_flavor(cls):
-        """
-        Return true if determined this is the project's flavor.
-        For example, current directory has a meta/version file,
-        return a true value.
-        """
-        # default should always return false
-        return False
-
-    def get_version(self):
-        """
-        Get the version from the current project flavor
-        """
-        path = os.path.join(self.directory, self.version_filename)
-        version_file = open(path, 'r')
-        version = version_file.read()
-        version_file.close()
-        return version
-
-    def set_version(self, version):
-        """
-        Set the version for the current project flavor
-        """
-        path = os.path.join(self.directory, self.version_filename)
-        version_file = open(path, 'w')
-        version = version_file.write("%s\n" % str(version))
-        version_file.close()
-
-
-@register_flavor('node')
-class AvakasNodeProject(AvakasProject):
-    """
-    Nodejs Avakas Project Flavor
-    """
-    PROJECT_TYPE = 'node'
-
-    @classmethod
-    def __read_package_json(cls, directory):
-        manifest = os.path.join(directory, 'package.json')
-        manifest_file = open(manifest, 'r')
-        manifest_json = json.load(manifest_file)
-        manifest_file.close()
-
-        return manifest_json
-
-    @classmethod
-    def __write_package_json(cls, directory, manifest_dict):
-        manifest = os.path.join(directory, 'package.json')
-        manifest_file = open(manifest, 'w')
-        json.dump(manifest_dict,
-                  manifest_file,
-                  indent=4,
-                  separators=(',', ': '),
-                  sort_keys=True)
-        manifest_file.close()
-
-    @classmethod
-    def __extract_version(cls, manifest_json):
-        return manifest_json['version']
-
-    def guess_flavor(self):
-        return os.path.exists("%s/package.json" % self.directory)
-
-    def get_version(self):
-        manifest = self.__read_package_json(self.directory)
-        return self.__extract_version(manifest)
-
-    def set_version(self, version):
-        manifest = self.__read_package_json(self.directory)
-        manifest['version'] = version
-        self.__write_package_json(self.directory, manifest)
-
-
-@register_flavor('erlang')
-class AvakasErlangProject(AvakasProject):
-    """
-    Erlang Avakas Project Flavor
-    """
-    PROJECT_TYPE = 'erlang'
-
-    def guess_flavor(self):
-        return len(glob("%s/src/*.app.src" % self.directory)) == 1
-
-    def get_version(self):
-        app_file = glob("%s/src/*.app.src" % self.directory)[0]
-        version_handle = open(app_file, 'r')
-        erl_terms = erl_decode(version_handle.read())
-        version_handle.close()
-        app_config = erl_terms[0][2]
-        erlang_version = None
-        for config in app_config:
-            if config[0] == 'vsn':
-                erlang_version = config[1]
-
-        if not erlang_version:
-            raise AvakasError('Unable to determine Erlang version')
-
-        return erlang_version
-
-    def set_version(self, version):
-        app_file = glob("%s/src/*.app.src" % self.directory)[0]
-        app_handle = open(app_file, 'r')
-        lines = []
-        updated = False
-        for line in app_handle:
-            re_out = re.sub(r'(.+vsn.+")(.+)(".+)', r'\1%s\3', line)
-            if re_out != line:
-                updated = True
-                lines.append(re_out % version)
-            else:
-                lines.append(line)
-
-        app_handle.close()
-        if not updated:
-            raise AvakasError('Unable to save Erlang version')
-
-        app_handle = open(app_file, 'w')
-        app_handle.write(''.join(lines))
-        app_handle.close()
-
-
-@register_flavor('chef')
-class AvakasChefProject(AvakasProject):
-    """
-    Chef Cookbook Avakas Project Flavor
-    """
-    PROJECT_TYPE = 'chef'
-
-    def guess_flavor(self):
-        return os.path.exists("%s/metadata.rb" % self.directory)
-
-    def get_version(self):
-        """Extract the version from Chef Cookbook metadata"""
-        metadata_handle = open("%s/metadata.rb" % self.directory, 'r')
-        metadata = metadata_handle.read()
-        metadata_handle.close()
-        pattern = r'^version.+["\'](?P<vsn>\d+\.\d+\.\d+)["\'].*'
-        vsn_match = re.compile(pattern, re.MULTILINE).search(metadata)
-        return str(vsn_match.group('vsn'))
-
-    def set_version(self, version):
-        """Writes the version to metadata.rb"""
-        metadata_file = "%s/metadata.rb" % self.directory
-        metadata_handle = open(metadata_file, 'r')
-        lines = []
-        updated = False
-        for line in metadata_handle:
-            pattern = r'^(version.+["\'])(\d+\.\d+\.\d+)(["\'].*)'
-            re_out = re.sub(pattern, r'\1%s\3', line)
-            if re_out != line:
-                updated = True
-                lines.append(re_out % version)
-            else:
-                lines.append(line)
-
-        metadata_handle.close()
-        if not updated:
-            raise AvakasError('Unable to set version on metadata.rb')
-
-        metadata_handle = open(metadata_file, 'w')
-        metadata_handle.write(''.join(lines))
-        metadata_handle.close()
-        super().set_version(version)
-
-
-@register_flavor('git')
-class AvakasGitProject(AvakasProject):
-    """
-    Version Control System Avakas Project
-    """
-    PROJECT_TYPE = 'git'
-
-    def __run_cmd(self, command, success=0):
-        result = subprocess.run(
-            command.split(' '),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            cwd=self.directory if self.directory is not None else None,
-            shell=False,
-            check=True,
-        )
-        output = result.stdout.decode().strip()
-        if result.returncode is not success:
-            raise AvakasError(
-                "The command '{}' returned code {}. Output:\n{}".format(
-                    command, result.returncode, output
-                )
-            )
-        return output
-
-    def get_version(self):
-        msg = self.__run_cmd('git tag --merged HEAD --sort -creatordate')
-        if not msg:
-            raise AvakasError('Unable to find a version tag')
-        tags = msg.splitlines()
-        fixed_tags = [t.lstrip('v') for t in tags]
-        sorted_versions = sorted(fixed_tags, key=cmp_to_key(semver_compare))
-
-        return sorted_versions[-1]
-
-    def set_version(self, version):
-        pass
-
-
-@register_flavor('ansible')
-class AvakasAnsibleProject(AvakasGitProject):
-    """
-    Ansible Avakas Project
-    """
-    PROJECT_TYPE = 'ansible'
-
-    def __init__(self, **kwargs):
-        opt = kwargs.get('opt', {})
-        tag_prefix = opt.get('tag_prefix', 'v')
-        # Handle explicit None
-        tag_prefix = 'v' if tag_prefix is None else tag_prefix
-        if tag_prefix != 'v':
-            print('Problem: Cannot specify a tag prefix with an Ansible Role')
-            sys.exit(1)
-        super().__init__(**kwargs)
-
-    def guess_flavor(self):
-        return os.path.exists("%s/meta/main.yml" % self.directory)
-
-    def set_version(self, version):
-        AvakasProject.set_version(self, "v%s" % version)
-        super().set_version("v%s" % version)
+from .avakas import Avakas
 
 
 @contextlib.contextmanager
@@ -683,6 +377,10 @@ def parse_args(parser):
 
 def main():
     """Dat entrypoint"""
+    if len(sys.argv) < 2:
+        usage()
+        sys.exit(1)
+
     parser = OptionParser()
     (operation, opt, args) = parse_args(parser)
 
@@ -716,12 +414,3 @@ def main():
 
     usage(parser)
     sys.exit(1)
-
-
-if __name__ == "__main__":
-
-    if len(sys.argv) < 2:
-        usage()
-        sys.exit(1)
-
-    main()
