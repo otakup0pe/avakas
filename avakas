@@ -8,6 +8,7 @@ For more information see https://github.com/otakup0pe/avakas
 """
 
 from __future__ import print_function
+from functools import cmp_to_key
 import os
 import re
 import json
@@ -16,10 +17,16 @@ from datetime import datetime
 from optparse import OptionParser
 from glob import glob
 import contextlib
-import dunamai
-from semantic_version import Version
+import subprocess
+from semantic_version import Version, compare as semver_compare
 from git import Repo
 from erl_terms import decode as erl_decode
+
+
+class AvakasError(Exception):
+    """
+    Basic Avakas Error
+    """
 
 
 class Avakas():
@@ -28,7 +35,12 @@ class Avakas():
     """
     project_flavors = {}
 
-    def determine_flavor(self, **kwargs):
+    def __init__(self, **kwargs):
+        self.directory = kwargs.get('directory', os.getcwd())
+        self.flavor = kwargs.get('flavor', self.__determine_flavor(**kwargs))
+
+    @classmethod
+    def __determine_flavor(cls, **kwargs):
         """
         Determines the project flavor for a given directory
         """
@@ -42,10 +54,22 @@ class Avakas():
         elif len(matched) == 0:
             project = Avakas.project_flavors['default'](**kwargs)
         else:
-            print("Multiple project flavor matches! %s" % matched)
+            matched_names = [f.PROJECT_TYPE for f in matched]
+            print("Multiple project flavor matches: %s" %
+                  ", ".join(matched_names))
             sys.exit(1)
 
         return project
+
+    def get_version(self):
+        """
+        Get version operation
+        """
+
+    def set_version(self, version):
+        """
+        Set version operation
+        """
 
 
 def register_flavor(flavor):
@@ -67,23 +91,40 @@ class AvakasProject():
     PROJECT_TYPE = 'default'
 
     def __init__(self, **kwargs):
+        self.options = kwargs.get('opt', {})
+        self.tag_prefix = self.options.get('tag_prefix', 'v')
+        self.version_filename = self.options.get('filename', 'version')
+        if self.version_filename is None:
+            self.version_filename = 'version'
         self.directory = kwargs.get('directory', os.getcwd())
 
-    def guess_flavor(self):
+    @classmethod
+    def guess_flavor(cls):
+        """
+        Return true if determined this is the project's flavor.
+        For example, current directory has a meta/version file,
+        return a true value.
+        """
         # default should always return false
         return False
 
     def get_version(self):
-        path = os.path.join(self.directory, 'version')
+        """
+        Get the version from the current project flavor
+        """
+        path = os.path.join(self.directory, self.version_filename)
         version_file = open(path, 'r')
         version = version_file.read()
         version_file.close()
         return version
 
     def set_version(self, version):
-        path = os.path.join(self.directory, 'version')
+        """
+        Set the version for the current project flavor
+        """
+        path = os.path.join(self.directory, self.version_filename)
         version_file = open(path, 'w')
-        version = version_file.write(str(version))
+        version = version_file.write("%s\n" % str(version))
         version_file.close()
 
 
@@ -94,7 +135,8 @@ class AvakasNodeProject(AvakasProject):
     """
     PROJECT_TYPE = 'node'
 
-    def _read_package_json(directory):
+    @classmethod
+    def __read_package_json(cls, directory):
         manifest = os.path.join(directory, 'package.json')
         manifest_file = open(manifest, 'r')
         manifest_json = json.load(manifest_file)
@@ -102,7 +144,8 @@ class AvakasNodeProject(AvakasProject):
 
         return manifest_json
 
-    def _write_package_json(directory, manifest_dict):
+    @classmethod
+    def __write_package_json(cls, directory, manifest_dict):
         manifest = os.path.join(directory, 'package.json')
         manifest_file = open(manifest, 'w')
         json.dump(manifest_dict,
@@ -112,20 +155,21 @@ class AvakasNodeProject(AvakasProject):
                   sort_keys=True)
         manifest_file.close()
 
-    def _extract_version(manifest_json):
+    @classmethod
+    def __extract_version(cls, manifest_json):
         return manifest_json['version']
 
     def guess_flavor(self):
         return os.path.exists("%s/package.json" % self.directory)
 
     def get_version(self):
-        manifest = self._read_package_json(self.directory)
-        return self._extract_version(manifest)
+        manifest = self.__read_package_json(self.directory)
+        return self.__extract_version(manifest)
 
     def set_version(self, version):
-        manifest = self._read_package_json(self.directory)
+        manifest = self.__read_package_json(self.directory)
         manifest['version'] = version
-        self._write_package_json(self.directory, manifest)
+        self.__write_package_json(self.directory, manifest)
 
 
 @register_flavor('erlang')
@@ -149,9 +193,8 @@ class AvakasErlangProject(AvakasProject):
             if config[0] == 'vsn':
                 erlang_version = config[1]
 
-        # TODO: Raise proper errors
         if not erlang_version:
-            return None
+            raise AvakasError('Unable to determine Erlang version')
 
         return erlang_version
 
@@ -170,12 +213,11 @@ class AvakasErlangProject(AvakasProject):
 
         app_handle.close()
         if not updated:
-            # TODO: Raise proper errors
-            pass
-        else:
-            app_handle = open(app_file, 'w')
-            app_handle.write(''.join(lines))
-            app_handle.close()
+            raise AvakasError('Unable to save Erlang version')
+
+        app_handle = open(app_file, 'w')
+        app_handle.write(''.join(lines))
+        app_handle.close()
 
 
 @register_flavor('chef')
@@ -195,7 +237,7 @@ class AvakasChefProject(AvakasProject):
         metadata_handle.close()
         pattern = r'^version.+["\'](?P<vsn>\d+\.\d+\.\d+)["\'].*'
         vsn_match = re.compile(pattern, re.MULTILINE).search(metadata)
-        return Version(vsn_match.group('vsn'))
+        return str(vsn_match.group('vsn'))
 
     def set_version(self, version):
         """Writes the version to metadata.rb"""
@@ -214,41 +256,76 @@ class AvakasChefProject(AvakasProject):
 
         metadata_handle.close()
         if not updated:
-            # TODO: Raise proper errors
-            pass
-        else:
-            metadata_handle = open(metadata_file, 'w')
-            metadata_handle.write(''.join(lines))
-            metadata_handle.close()
+            raise AvakasError('Unable to set version on metadata.rb')
+
+        metadata_handle = open(metadata_file, 'w')
+        metadata_handle.write(''.join(lines))
+        metadata_handle.close()
+        super().set_version(version)
 
 
-@register_flavor('vcs')
-class AvakasVcsProject(AvakasProject):
+@register_flavor('git')
+class AvakasGitProject(AvakasProject):
     """
     Version Control System Avakas Project
     """
-    PROJECT_TYPE = 'vcs'
+    PROJECT_TYPE = 'git'
+
+    def __run_cmd(self, command, success=0):
+        result = subprocess.run(
+            command.split(' '),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            cwd=self.directory if self.directory is not None else None,
+            shell=False,
+            check=True,
+        )
+        output = result.stdout.decode().strip()
+        if result.returncode is not success:
+            raise AvakasError(
+                "The command '{}' returned code {}. Output:\n{}".format(
+                    command, result.returncode, output
+                )
+            )
+        return output
 
     def get_version(self):
-        version = dunamai.Version.from_any_vcs()
-        return version.serialize(style=dunamai.Style.SemVer)
+        msg = self.__run_cmd('git tag --merged HEAD --sort -creatordate')
+        if not msg:
+            raise AvakasError('Unable to find a version tag')
+        tags = msg.splitlines()
+        fixed_tags = [t.lstrip('v') for t in tags]
+        sorted_versions = sorted(fixed_tags, key=cmp_to_key(semver_compare))
 
-    def set_version(self):
+        return sorted_versions[-1]
+
+    def set_version(self, version):
         pass
 
 
 @register_flavor('ansible')
-class AvakasAnsibleProject(AvakasVcsProject):
+class AvakasAnsibleProject(AvakasGitProject):
     """
     Ansible Avakas Project
     """
     PROJECT_TYPE = 'ansible'
 
+    def __init__(self, **kwargs):
+        opt = kwargs.get('opt', {})
+        tag_prefix = opt.get('tag_prefix', 'v')
+        # Handle explicit None
+        tag_prefix = 'v' if tag_prefix is None else tag_prefix
+        if tag_prefix != 'v':
+            print('Problem: Cannot specify a tag prefix with an Ansible Role')
+            sys.exit(1)
+        super().__init__(**kwargs)
+
     def guess_flavor(self):
         return os.path.exists("%s/meta/main.yml" % self.directory)
 
-    def get_version(self):
-        return super(self).get_version()
+    def set_version(self, version):
+        AvakasProject.set_version(self, "v%s" % version)
+        super().set_version("v%s" % version)
 
 
 @contextlib.contextmanager
@@ -292,24 +369,6 @@ def git_push(repo, opt, tag=None):
         problems("Unexpected git error: %s" % info.summary)
 
 
-def grok_vsn_file(directory):
-    """Determines what our actual file to be modified is"""
-    a = Avakas()
-    flav = a.determine_flavor()
-    vsn_file = None
-    if flav == 'node':
-        vsn_file = "%s/package.json" % directory
-    elif flav == 'erlang':
-        app_file = glob("%s/src/*.app.src" % directory)
-        vsn_file = "%s/%s" % (directory, app_file)
-    elif flav == 'chef-cookbook':
-        vsn_file = '%s/metadata.rb' % directory
-    elif flav != 'ansible':
-        vsn_file = "%s/version" % directory
-
-    return vsn_file
-
-
 def write_git(repo, directory, vsn_str, opt):
     """Will commit and push the version file and optionally tags."""
     if isinstance(vsn_str, str):
@@ -332,10 +391,11 @@ def write_git(repo, directory, vsn_str, opt):
 
         return
 
-    vsn_file = grok_vsn_file(directory)
+    ava = Avakas(directory=directory, opt=opt.__dict__)
+    project = ava.flavor
 
-    if vsn_file:
-        repo.index.add([vsn_file])
+    if project.version_filename:
+        repo.index.add([project.version_filename])
         skip_hooks = True
         if opt.with_hooks:
             skip_hooks = False
@@ -414,30 +474,6 @@ def git_rev(directory):
     return str(get_repo(directory).head.commit)[0:8]
 
 
-def extract_ansible_version(repo, opt):
-    """Extract the version of an Ansible Galaxy role from git tags."""
-    raw_tags = [t.name for t in repo.tags]
-    unsorted_tags = []
-    prefix = opt.tag_prefix
-    for tag in raw_tags:
-        if prefix:
-            if tag[0:len(prefix)] == prefix:
-                unsorted_tags.append(str(Version(tag[len(prefix):])))
-        else:
-            try:
-                version = Version(tag)
-                unsorted_tags.append(str(version))
-            except ValueError:
-                continue
-
-    tags = sorted(unsorted_tags)
-    tags.reverse()
-    if tags:
-        return Version(tags[0])
-
-    return None
-
-
 def bump_auto(artifact_version, repo, opt):
     """Will go through the Git history until the last version bump
     and look for hints that we want to "automatically" bump
@@ -470,12 +506,9 @@ def bump_auto(artifact_version, repo, opt):
 
 def bump_version(repo, directory, bump, opt):
     """Bump the flavour specific version for a project."""
-    a = Avakas()
-    project = a.determine_flavor()
-
-    print("Determined Project Flavor: %s" % project.PROJECT_TYPE)
-
-    artifact_version = project.get_version()
+    ava = Avakas(directory=directory)
+    project = ava.flavor
+    artifact_version = Version(project.get_version())
 
     if bump == 'auto':
         new_version = bump_auto(artifact_version, repo, opt)
@@ -495,9 +528,9 @@ def set_version(directory, version, opt):
     except ValueError:
         problems("Invalid version string %s" % version)
 
-    a = Avakas()
-    project = a.determine_flavor()
-    project.set_version(new_version)
+    ava = Avakas(directory=directory, opt=opt.__dict__)
+    project = ava.flavor
+    project.set_version(version)
 
     print("Version set to %s" % version)
 
@@ -565,9 +598,9 @@ def append_build_version(git_str, artifact_version):
 
 def show_version(directory, opt):
     """Show the current flavour specific version for a project."""
-    a = Avakas()
-    project = a.determine_flavor()
-    artifact_version = project.get_version()
+    ava = Avakas(directory=directory, opt=opt.__dict__)
+    project = ava.flavor
+    artifact_version = Version(project.get_version())
 
     if not artifact_version:
         problems('Unable to extract current version')

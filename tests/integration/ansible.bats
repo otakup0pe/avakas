@@ -25,7 +25,7 @@ teardown() {
     scan_lines "Version set to 0.0.2" "${lines[@]}"
     avakas_wrapper show "$REPO"
     scan_lines "0.0.2" "${lines[@]}"
-    [ ! -e "$REPO/version" ]
+    [ -e "$REPO/version" ]
 }
 
 @test "bump an ansible version" {
@@ -33,7 +33,7 @@ teardown() {
     scan_lines "Version updated from 0.0.1 to 0.0.2" "${lines[@]}"
     avakas_wrapper show "$REPO"
     scan_lines "0.0.2" "${lines[@]}"
-    [ ! -e "$REPO/version" ]
+    [ -e "$REPO/version" ]
 }
 
 @test "do not allow the setting of a prefix" {
