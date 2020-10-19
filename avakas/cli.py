@@ -200,7 +200,7 @@ def bump_auto(artifact_version, repo, opt):
 
 def bump_version(repo, directory, bump, opt):
     """Bump the flavour specific version for a project."""
-    ava = Avakas(directory=directory)
+    ava = Avakas(directory=directory, opt=opt.__dict__)
     project = ava.flavor
     artifact_version = Version(project.get_version())
 
