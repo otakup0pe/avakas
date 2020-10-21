@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """avakas
 
 The avakas tool is meant as an interface around version
@@ -8,17 +7,19 @@ For more information see https://github.com/otakup0pe/avakas
 """
 
 from __future__ import print_function
+
 import os
 import re
-import json
 import sys
 from datetime import datetime
 from optparse import OptionParser
-from glob import glob
 import contextlib
+
 from semantic_version import Version
+
 from git import Repo
-from erl_terms import decode as erl_decode
+
+from .avakas import Avakas
 
 
 @contextlib.contextmanager
@@ -51,103 +52,6 @@ def problems(msg):
     sys.exit(1)
 
 
-def determine_flavor(directory):
-    """Determines the project flavour for the given directory."""
-    flavor = 'plain'
-    if os.path.exists("%s/package.json" % directory):
-        flavor = 'node'
-    elif os.path.exists("%s/meta/main.yml" % directory):
-        flavor = 'ansible'
-    elif len(glob("%s/src/*.app.src" % directory)) == 1:
-        flavor = 'erlang'
-    elif os.path.exists("%s/metadata.rb" % directory):
-        flavor = 'chef-cookbook'
-
-    return flavor
-
-
-def read_package_json(directory):
-    """Reads the version from package.json."""
-    package_file = "%s/package.json" % directory
-    if not os.path.exists(package_file):
-        problems("The %s file is missing" % package_file)
-
-    package_handle = open(package_file, 'r')
-    package_json = json.load(package_handle)
-    package_handle.close()
-
-    return package_json
-
-
-def write_plain_version(directory, version, opt):
-    """Writes the version to a plain text file."""
-    version_file = "%s/%s" % (directory, opt.filename)
-    plain_handle = open(version_file, 'w')
-    plain_handle.write(str(version))
-    plain_handle.close()
-
-
-def write_node_version(directory, version):
-    """Writes the version to package.json."""
-    package_json = read_package_json(directory)
-    package_json['version'] = str(version)
-    package_file = "%s/package.json" % directory
-    package_handle = open(package_file, 'w')
-    json.dump(package_json,
-              package_handle,
-              indent=4,
-              separators=(',', ': '),
-              sort_keys=True)
-    package_handle.close()
-
-
-def write_erlang_version(directory, version):
-    """Writes the version to foo.app.src."""
-    app_file = glob("%s/src/*.app.src" % directory)[0]
-    app_handle = open(app_file, 'r')
-    lines = []
-    updated = False
-    for line in app_handle:
-        re_out = re.sub(r'(.+vsn.+")(.+)(".+)', r'\1%s\3', line)
-        if re_out != line:
-            updated = True
-            lines.append(re_out % version)
-        else:
-            lines.append(line)
-
-    app_handle.close()
-    if not updated:
-        problems("Unable to edit file %s" % app_file)
-    else:
-        app_handle = open(app_file, 'w')
-        app_handle.write(''.join(lines))
-        app_handle.close()
-
-
-def write_cookbook_version(directory, version):
-    """Writes the version to metadata.rb"""
-    metadata_file = "%s/metadata.rb" % directory
-    metadata_handle = open(metadata_file, 'r')
-    lines = []
-    updated = False
-    for line in metadata_handle:
-        pattern = r'^(version.+["\'])(\d+\.\d+\.\d+)(["\'].*)'
-        re_out = re.sub(pattern, r'\1%s\3', line)
-        if re_out != line:
-            updated = True
-            lines.append(re_out % version)
-        else:
-            lines.append(line)
-
-    metadata_handle.close()
-    if not updated:
-        problems("Unable to edit file %s" % metadata_file)
-    else:
-        metadata_handle = open(metadata_file, 'w')
-        metadata_handle.write(''.join(lines))
-        metadata_handle.close()
-
-
 def git_push(repo, opt, tag=None):
     """Pushes the repository to our remote."""
     if tag:
@@ -157,23 +61,6 @@ def git_push(repo, opt, tag=None):
     info = info[0]
     if info.flags & 1024 or info.flags & 32 or info.flags & 16:
         problems("Unexpected git error: %s" % info.summary)
-
-
-def grok_vsn_file(directory):
-    """Determines what our actual file to be modified is"""
-    flav = determine_flavor(directory)
-    vsn_file = None
-    if flav == 'node':
-        vsn_file = "%s/package.json" % directory
-    elif flav == 'erlang':
-        app_file = glob("%s/src/*.app.src" % directory)
-        vsn_file = "%s/%s" % (directory, app_file)
-    elif flav == 'chef-cookbook':
-        vsn_file = '%s/metadata.rb' % directory
-    elif flav != 'ansible':
-        vsn_file = "%s/version" % directory
-
-    return vsn_file
 
 
 def write_git(repo, directory, vsn_str, opt):
@@ -198,10 +85,11 @@ def write_git(repo, directory, vsn_str, opt):
 
         return
 
-    vsn_file = grok_vsn_file(directory)
+    ava = Avakas(directory=directory, opt=opt.__dict__)
+    project = ava.flavor
 
-    if vsn_file:
-        repo.index.add([vsn_file])
+    if project.version_filename:
+        repo.index.add([project.version_filename])
         skip_hooks = True
         if opt.with_hooks:
             skip_hooks = False
@@ -280,77 +168,6 @@ def git_rev(directory):
     return str(get_repo(directory).head.commit)[0:8]
 
 
-def extract_node_version(directory):
-    """Extract just the version from a nodejs project."""
-    package_json = read_package_json(directory)
-    version = package_json['version']
-    return Version(version)
-
-
-def extract_erlang_version(directory):
-    """Extract just the vesion from an Erlang/OTP application."""
-    app_file = glob("%s/src/*.app.src" % directory)[0]
-    version_handle = open(app_file, 'r')
-    erl_terms = erl_decode(version_handle.read())
-    version_handle.close()
-    app_config = erl_terms[0][2]
-    erlang_version = None
-    for config in app_config:
-        if config[0] == 'vsn':
-            erlang_version = Version(config[1])
-
-    if not erlang_version:
-        problems("Something wrong with OTP app file " % app_file)
-
-    return erlang_version
-
-
-def extract_ansible_version(repo, opt):
-    """Extract the version of an Ansible Galaxy role from git tags."""
-    raw_tags = [t.name for t in repo.tags]
-    unsorted_tags = []
-    prefix = opt.tag_prefix
-    for tag in raw_tags:
-        if prefix:
-            if tag[0:len(prefix)] == prefix:
-                unsorted_tags.append(str(Version(tag[len(prefix):])))
-        else:
-            try:
-                version = Version(tag)
-                unsorted_tags.append(str(version))
-            except ValueError:
-                continue
-
-    tags = sorted(unsorted_tags)
-    tags.reverse()
-    if tags:
-        return Version(tags[0])
-
-    return None
-
-
-def extract_plain_version(directory, opt):
-    """Extract just the version from a generic project."""
-    version_file = "%s/%s" % (directory, opt.filename)
-    if not os.path.exists(version_file):
-        problems("The version file %s is missing" % version_file)
-
-    version_handle = open(version_file, 'r')
-    version = version_handle.read()
-    version_handle.close()
-    return Version(version)
-
-
-def extract_cookbook_version(directory):
-    """Extract the version from Chef Cookbook metadata"""
-    metadata_handle = open("%s/metadata.rb" % directory, 'r')
-    metadata = metadata_handle.read()
-    metadata_handle.close()
-    pattern = r'^version.+["\'](?P<vsn>\d+\.\d+\.\d+)["\'].*'
-    vsn_match = re.compile(pattern, re.MULTILINE).search(metadata)
-    return Version(vsn_match.group('vsn'))
-
-
 def bump_auto(artifact_version, repo, opt):
     """Will go through the Git history until the last version bump
     and look for hints that we want to "automatically" bump
@@ -383,32 +200,16 @@ def bump_auto(artifact_version, repo, opt):
 
 def bump_version(repo, directory, bump, opt):
     """Bump the flavour specific version for a project."""
-    flavor = determine_flavor(directory)
-
-    if flavor == 'node':
-        artifact_version = extract_node_version(directory)
-    elif flavor == 'erlang':
-        artifact_version = extract_erlang_version(directory)
-    elif flavor == 'ansible':
-        artifact_version = extract_ansible_version(repo, opt)
-    elif flavor == 'chef-cookbook':
-        artifact_version = extract_cookbook_version(directory)
-    else:
-        artifact_version = extract_plain_version(directory, opt)
+    ava = Avakas(directory=directory, opt=opt.__dict__)
+    project = ava.flavor
+    artifact_version = Version(project.get_version())
 
     if bump == 'auto':
         new_version = bump_auto(artifact_version, repo, opt)
     else:
         new_version = transmogrify_version(artifact_version, bump)
 
-    if flavor == 'node':
-        write_node_version(directory, new_version)
-    elif flavor == 'erlang':
-        write_erlang_version(directory, new_version)
-    elif flavor == 'chef-cookbook':
-        write_cookbook_version(directory, new_version)
-    elif flavor != 'ansible':
-        write_plain_version(directory, new_version, opt)
+    project.set_version(new_version)
 
     print("Version updated from %s to %s" % (artifact_version, new_version))
     return new_version
@@ -421,15 +222,9 @@ def set_version(directory, version, opt):
     except ValueError:
         problems("Invalid version string %s" % version)
 
-    flavor = determine_flavor(directory)
-    if flavor == 'node':
-        write_node_version(directory, version)
-    elif flavor == 'erlang':
-        write_erlang_version(directory, version)
-    elif flavor == 'chef-cookbook':
-        write_cookbook_version(directory, version)
-    elif flavor == 'plain':
-        write_plain_version(directory, version, opt)
+    ava = Avakas(directory=directory, opt=opt.__dict__)
+    project = ava.flavor
+    project.set_version(version)
 
     print("Version set to %s" % version)
 
@@ -497,18 +292,9 @@ def append_build_version(git_str, artifact_version):
 
 def show_version(directory, opt):
     """Show the current flavour specific version for a project."""
-    flavor = determine_flavor(directory)
-    if flavor == 'node':
-        artifact_version = extract_node_version(directory)
-    elif flavor == 'erlang':
-        artifact_version = extract_erlang_version(directory)
-    elif flavor == 'ansible':
-        repo = load_git(directory, opt)
-        artifact_version = extract_ansible_version(repo, opt)
-    elif flavor == 'chef-cookbook':
-        artifact_version = extract_cookbook_version(directory)
-    else:
-        artifact_version = extract_plain_version(directory, opt)
+    ava = Avakas(directory=directory, opt=opt.__dict__)
+    project = ava.flavor
+    artifact_version = Version(project.get_version())
 
     if not artifact_version:
         problems('Unable to extract current version')
@@ -524,7 +310,9 @@ def show_version(directory, opt):
 
 def parse_args(parser):
     """Parse our command line arguments."""
+
     operation = sys.argv[1]
+
     parser.add_option('--tag-prefix',
                       dest='tag_prefix',
                       help='Prefix for version tag name',
@@ -589,6 +377,10 @@ def parse_args(parser):
 
 def main():
     """Dat entrypoint"""
+    if len(sys.argv) < 2:
+        usage()
+        sys.exit(1)
+
     parser = OptionParser()
     (operation, opt, args) = parse_args(parser)
 
@@ -596,13 +388,6 @@ def main():
 
     if not os.path.exists(directory):
         problems("Directory %s does not exist." % directory)
-
-    # Ansible Galaxy expects this prefix
-    if determine_flavor(directory) == 'ansible':
-        if opt.tag_prefix:
-            problems('Cannot specify a tag prefix with an Ansible Role')
-        else:
-            opt.tag_prefix = 'v'
 
     if operation == 'bump':
         bump = 'dev'
@@ -629,11 +414,3 @@ def main():
 
     usage(parser)
     sys.exit(1)
-
-if __name__ == "__main__":
-
-    if len(sys.argv) < 2:
-        usage()
-        sys.exit(1)
-
-    main()

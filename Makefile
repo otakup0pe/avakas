@@ -10,10 +10,13 @@ testenv:
 		(echo "Outside CI" && .ci-env/bin/pip install -r requirements.txt -r requirements-dev.txt --upgrade) || \
 		(echo "Within CI" && pip install -r requirements.txt -r requirements-dev.txt)
 
+install:
+	python setup.py install
+
 package:
 	python setup.py sdist
 
-test: testenv
+test: testenv install
 	$(CI_ENV)coverage erase
 	$(CI_ENV)pep8 "avakas"
 	$(CI_ENV)pylint "avakas"
@@ -23,6 +26,7 @@ test: testenv
 
 clean:
 	rm -rf .bats-git .bats .ci-env avakas.egg-info dist build .coverage
+	python setup.py clean
 
 container:
 	docker build \
