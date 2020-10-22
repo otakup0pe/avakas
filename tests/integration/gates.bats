@@ -23,3 +23,24 @@ teardown() {
     scan_lines "Problem: Git repo dirty." "${lines[@]}"
 }
 
+@test "skip checking for dirty files" {
+    cd "$REPO"
+    touch aaaa
+    git add aaaa
+    avakas_rc 0 set "$REPO" "0.0.2" --skip-dirty
+    scan_lines "Version set to 0.0.2" "${lines[@]}"
+}
+
+@test "version file is being tracked" {
+    cd "$REPO"
+    avakas_rc 0 set "$REPO" "0.0.3" --filename tracked_version
+    scan_lines "Version set to 0.0.3" "${lines[@]}"
+    test $(git ls-files --error-unmatch tracked_version)
+}
+
+@test "skip committing version file" {
+    cd "$REPO"
+    avakas_rc 0 set "$REPO" "0.0.4" --filename da_testfile --skip-commit-change
+    scan_lines "Version set to 0.0.4" "${lines[@]}"
+    test ! $(git ls-files --error-unmatch da_testfile)
+}

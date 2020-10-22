@@ -88,7 +88,7 @@ def write_git(repo, directory, vsn_str, opt):
     ava = Avakas(directory=directory, opt=opt.__dict__)
     project = ava.flavor
 
-    if project.version_filename:
+    if project.version_filename and opt.commitchanges:
         repo.index.add([project.version_filename])
         skip_hooks = True
         if opt.with_hooks:
@@ -109,7 +109,7 @@ def load_git(directory, opt):
     if not repo:
         problems("Unable to find associated git repo for %s." % directory)
 
-    if repo.is_dirty():
+    if not opt.skipdirty and repo.is_dirty():
         problems("Git repo dirty.")
 
     if opt.branch not in repo.heads:
@@ -329,6 +329,16 @@ def parse_args(parser):
                       dest='filename',
                       help='File name. Used for fallback versioning.',
                       default='version')
+    parser.add_option('--skip-dirty',
+                      dest='skipdirty',
+                      help='Skip checking if local repo is dirty',
+                      action='store_true',
+                      default=False)
+    parser.add_option('--skip-commit-changes',
+                      dest='commitchanges',
+                      help='Skip commiting generated version files',
+                      action='store_false',
+                      default=True)
 
     if operation in ('set', 'bump'):
         parser.add_option('--with-hooks',
