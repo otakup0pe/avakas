@@ -20,6 +20,7 @@ from semantic_version import Version
 from git import Repo
 
 from .avakas import detect_project_flavor
+from .errors import AvakasError
 
 
 @contextlib.contextmanager
@@ -168,10 +169,13 @@ def determine_bump(artifact_version, repo, opt):
     return vsn
 
 
-def bump_version(repo, directory, bump, opt):
+def cli_bump_version(directory, opt):
     """Bump the flavour specific version for a project."""
+    repo = load_git(directory, opt)
     project = detect_project_flavor(directory=directory, opt=opt.__dict__)
     artifact_version = project.get_version()
+
+    bump = opt.level[0]
 
     if bump == 'auto':
         bump = determine_bump(artifact_version, repo, opt)
@@ -182,12 +186,15 @@ def bump_version(repo, directory, bump, opt):
     new_version = project.bump(bump)
     project.set_version(new_version)
 
+    write_git(repo, directory, new_version, args)
+
     print("Version updated from %s to %s" % (artifact_version, new_version))
-    return new_version
 
 
-def set_version(directory, version, opt):
+def cli_set_version(directory, version, opt):
     """Manually set the flavour specific version for a project."""
+    version = opt.version[0]
+
     try:
         Version(version)
     except ValueError:
@@ -195,6 +202,9 @@ def set_version(directory, version, opt):
 
     project = detect_project_flavor(directory=directory, opt=opt.__dict__)
     project.set_version(version)
+
+    repo = load_git(directory, opt)
+    write_git(repo, directory, version, opt)
 
     print("Version set to %s" % version)
 
@@ -260,8 +270,12 @@ def append_build_version(git_str, artifact_version):
                                  + (ci_version,)
 
 
-def show_version(directory, opt):
+def cli_show_version(directory, opt):
     """Show the current flavour specific version for a project."""
+    if opt.build and opt.prebuild and not \
+       (opt.prebuild_prefix or opt.prebuild_date):
+        AvakasError('Cannot specify build without prebuild')
+
     project = detect_project_flavor(directory=directory, opt=opt.__dict__)
     artifact_version = Version(project.get_version())
 
@@ -326,7 +340,7 @@ def parse_args(parser):
 
     set_p = subparsers.add_parser('set', parents=[common, writable])
     set_p.add_argument('version', nargs=1,
-                       help='Desired version to set', default='auto')
+                       help='Desired version to set')
 
     bump_p = subparsers.add_parser('bump', parents=[common, writable])
     bump_p.add_argument('level', nargs=1, choices=BUMP_LEVELS,
@@ -368,23 +382,10 @@ def main():
         problems("Directory %s does not exist." % directory)
 
     if args.operation == 'bump':
-        bump = args.level[0]
-        repo = load_git(directory, args)
-        version = bump_version(repo, directory, bump, args)
-        write_git(repo, directory, version, args)
-        sys.exit(0)
+        cli_bump_version(directory, args)
     elif args.operation == 'show':
-        if args.build and args.prebuild and not \
-           (args.prebuild_prefix or args.prebuild_date):
-            problems('Cannot specify --build with empty --prebuild')
-        show_version(directory, args)
-        sys.exit(0)
+        cli_show_version(directory, args)
     elif args.operation == 'set':
-        repo = load_git(directory, args)
-        version = args.version[0]
-        set_version(directory, version, args)
-        write_git(repo, directory, version, args)
-        sys.exit(0)
+        cli_set_version(directory, args)
 
-    usage(parser)
-    sys.exit(1)
+    sys.exit(0)
