@@ -12,14 +12,15 @@ import os
 import re
 import sys
 from datetime import datetime
-from optparse import OptionParser
+import argparse
 import contextlib
 
 from semantic_version import Version
 
 from git import Repo
 
-from .avakas import Avakas
+from .avakas import detect_project_flavor
+from .errors import AvakasError
 
 
 @contextlib.contextmanager
@@ -45,13 +46,6 @@ def usage(parser=None):
         parser.print_help()
 
 
-def problems(msg):
-    """Simple give-up and error out function."""
-    print("Problem: %s" % msg,
-          file=sys.stderr)
-    sys.exit(1)
-
-
 def git_push(repo, opt, tag=None):
     """Pushes the repository to our remote."""
     if tag:
@@ -60,7 +54,7 @@ def git_push(repo, opt, tag=None):
         info = repo.remotes[opt.remote].push()
     info = info[0]
     if info.flags & 1024 or info.flags & 32 or info.flags & 16:
-        problems("Unexpected git error: %s" % info.summary)
+        raise AvakasError("Unexpected git error: %s" % info.summary)
 
 
 def write_git(repo, directory, vsn_str, opt):
@@ -85,8 +79,7 @@ def write_git(repo, directory, vsn_str, opt):
 
         return
 
-    ava = Avakas(directory=directory, opt=opt.__dict__)
-    project = ava.flavor
+    project = detect_project_flavor(directory=directory, opt=opt.__dict__)
 
     if project.version_filename and opt.commitchanges:
         repo.index.add([project.version_filename])
@@ -107,13 +100,14 @@ def load_git(directory, opt):
     """Initializes our local git workspace."""
     repo = get_repo(directory)
     if not repo:
-        problems("Unable to find associated git repo for %s." % directory)
+        raise AvakasError("Unable to find associated git repo for %s." %
+                          directory)
 
     if not opt.skipdirty and repo.is_dirty():
-        problems("Git repo dirty.")
+        raise AvakasError("Git repo dirty.")
 
     if opt.branch not in repo.heads:
-        problems("Branch %s branch not found." % opt.branch)
+        raise AvakasError("Branch %s branch not found." % opt.branch)
 
     if repo.active_branch != repo.heads[opt.branch]:
         print("Switching to %s branch" % opt.branch,
@@ -124,38 +118,13 @@ def load_git(directory, opt):
               file=sys.stderr)
 
     if opt.remote not in [r.name for r in repo.remotes]:
-        problems("Remote %s not found" % opt.remote)
+        raise AvakasError("Remote %s not found" % opt.remote)
 
     # we really do not want to be polluting our stdout when showing the version
     with stdout_redirect():
         repo.remotes[opt.remote].pull(refspec=opt.branch)
 
     return repo
-
-
-def transmogrify_version(version, bump):
-    """Update the version string."""
-    new_version = None
-    if bump == 'patch':
-        new_version = version.next_patch()
-    elif bump == 'minor':
-        new_version = version.next_minor()
-    elif bump == 'major':
-        new_version = version.next_major()
-    elif bump == 'pre':
-        new_version = Version(str(version))
-        prereleases = len(new_version.prerelease)
-        if prereleases == 1:
-            new_version.prerelease = (str(int(new_version.prerelease[0]) + 1))
-        elif prereleases == 0:
-            new_version.prerelease = ('1')
-        else:
-            problems("Unexpected version prerelease")
-
-    else:
-        problems("Invalid version component")
-
-    return new_version
 
 
 def get_repo(directory):
@@ -168,7 +137,7 @@ def git_rev(directory):
     return str(get_repo(directory).head.commit)[0:8]
 
 
-def bump_auto(artifact_version, repo, opt):
+def determine_bump(repo, opt):
     """Will go through the Git history until the last version bump
     and look for hints that we want to "automatically" bump
     our version"""
@@ -191,236 +160,196 @@ def bump_auto(artifact_version, repo, opt):
             elif vsn == 'minor' and bump == 'major':
                 vsn = 'major'
 
-    if not vsn:
-        print("No auto bump indicators", file=sys.stderr)
-        sys.exit(0)
-
-    return transmogrify_version(artifact_version, vsn)
+    return vsn
 
 
-def bump_version(repo, directory, bump, opt):
+def cli_bump_version(directory, opt):
     """Bump the flavour specific version for a project."""
-    ava = Avakas(directory=directory, opt=opt.__dict__)
-    project = ava.flavor
-    artifact_version = Version(project.get_version())
+    repo = load_git(directory, opt)
+    project = detect_project_flavor(directory=directory, opt=opt.__dict__)
+    artifact_version = project.get_version()
+
+    bump = opt.level[0]
 
     if bump == 'auto':
-        new_version = bump_auto(artifact_version, repo, opt)
-    else:
-        new_version = transmogrify_version(artifact_version, bump)
+        bump = determine_bump(repo, opt)
+        if not bump:
+            print("No auto bump indicators", file=sys.stderr)
+            sys.exit(0)
 
+    new_version = project.bump(bump)
     project.set_version(new_version)
 
+    write_git(repo, directory, new_version, opt)
+
     print("Version updated from %s to %s" % (artifact_version, new_version))
-    return new_version
 
 
-def set_version(directory, version, opt):
+def cli_set_version(directory, opt):
     """Manually set the flavour specific version for a project."""
+    version = opt.version[0]
+    repo = load_git(directory, opt)
     try:
-        version = Version(version)
-    except ValueError:
-        problems("Invalid version string %s" % version)
+        Version(version)
+    except ValueError as err:
+        raise AvakasError("Invalid version string %s" % version) from err
 
-    ava = Avakas(directory=directory, opt=opt.__dict__)
-    project = ava.flavor
+    project = detect_project_flavor(directory=directory, opt=opt.__dict__)
     project.set_version(version)
+
+    write_git(repo, directory, version, opt)
 
     print("Version set to %s" % version)
 
 
 def ci_build_meta():
     """Return any CI system specific build metadata"""
-    ci_version = None
+    meta = ()
     if 'BUILD_NUMBER' in os.environ:
-        ci_version = os.environ['BUILD_NUMBER']
+        meta = (os.environ['BUILD_NUMBER'],)
     elif 'TRAVIS_BUILD_NUMBER' in os.environ:
-        ci_version = os.environ['TRAVIS_BUILD_NUMBER']
+        meta = (os.environ['TRAVIS_BUILD_NUMBER'],)
     elif 'CIRCLE_BUILD_NUM' in os.environ:
-        ci_version = os.environ['CIRCLE_BUILD_NUM']
+        meta = (os.environ['CIRCLE_BUILD_NUM'],)
     elif ('GITHUB_RUN_ID' in os.environ) and \
          ('GITHUB_RUN_NUMBER' in os.environ):
-        ci_version = "%s.%s" % (os.environ['GITHUB_RUN_ID'],
-                                os.environ['GITHUB_RUN_NUMBER'])
-
-    return ci_version
+        meta = (os.environ['GITHUB_RUN_ID'], os.environ['GITHUB_RUN_NUMBER'],)
+    return meta
 
 
-def prebuild_meta():
-    """Generate pre-build metadata"""
-    time_fmt = "%Y%m%d%H%M%S"
-    now_str = datetime.utcnow().strftime(time_fmt)
-    return now_str
-
-
-def append_prebuild_version(opt, git_str, artifact_version):
-    """Append the prebuild version component if so desired."""
-    if not (opt.prebuild_prefix or opt.prebuild_date):
-        if artifact_version.prerelease:
-            artifact_version.prerelease = artifact_version.prerelease \
-                                          + (git_str,)
-        else:
-            artifact_version.prerelease = (git_str,)
-
-        ci_version = ci_build_meta()
-        if ci_version:
-            artifact_version.prerelease = artifact_version.prerelease \
-                                          + (ci_version,)
-    else:
-        if opt.prebuild_prefix:
-            artifact_version.prerelease = artifact_version.prerelease \
-                                          + (opt.prebuild_prefix,)
-
-        if opt.prebuild_date:
-            artifact_version.prerelease = artifact_version.prerelease \
-                                          + (prebuild_meta(),)
-
-
-def append_build_version(git_str, artifact_version):
-    """Append the build version component if so desired."""
-    if artifact_version.build:
-        artifact_version.build = artifact_version.build \
-                                 + (git_str,)
-    else:
-        artifact_version.build = (git_str,)
-
-    ci_version = ci_build_meta()
-    if ci_version:
-        artifact_version.build = artifact_version.build \
-                                 + (ci_version,)
-
-
-def show_version(directory, opt):
+def cli_show_version(directory, opt):
     """Show the current flavour specific version for a project."""
-    ava = Avakas(directory=directory, opt=opt.__dict__)
-    project = ava.flavor
-    artifact_version = Version(project.get_version())
+    if opt.build and opt.prebuild and not \
+       (opt.prebuild_prefix or opt.prebuild_date):
+        raise AvakasError('Cannot specify build without prebuild')
+
+    project = detect_project_flavor(directory=directory, opt=opt.__dict__)
+    artifact_version = project.get_version()
 
     if not artifact_version:
-        problems('Unable to extract current version')
+        raise AvakasError('Unable to extract current version')
+
+    now = None
+    if opt.prebuild_date:
+        time_fmt = "%Y%m%d%H%M%S"
+        now = datetime.utcnow().strftime(time_fmt)
 
     git_str = str(git_rev(directory))
     if opt.build:
-        append_build_version(git_str, artifact_version)
+        metadata = (git_str,)
+        metadata += ci_build_meta()
+        project.apply_metadata(*metadata)
     if opt.prebuild:
-        append_prebuild_version(opt, git_str, artifact_version)
+        prebuild = (git_str,)
+        prebuild += ci_build_meta()
+        project.apply_prebuild(*prebuild,
+                               prefix=opt.prebuild_prefix,
+                               prebuild_date=now)
 
-    print("%s" % str(artifact_version))
+    print("%s" % str(project.version))
 
 
 def parse_args(parser):
     """Parse our command line arguments."""
 
-    operation = sys.argv[1]
+    bump_levels = ['pre', 'patch', 'minor', 'major', 'auto']
 
-    parser.add_option('--tag-prefix',
-                      dest='tag_prefix',
-                      help='Prefix for version tag name',
-                      default=None)
-    parser.add_option('--branch',
-                      dest='branch',
-                      help='Branch to use when updating git',
-                      default='master')
-    parser.add_option('--remote',
-                      dest='remote',
-                      help='Git remote',
-                      default='origin')
-    parser.add_option('--filename',
-                      dest='filename',
-                      help='File name. Used for fallback versioning.',
-                      default='version')
-    parser.add_option('--skip-dirty',
-                      dest='skipdirty',
-                      help='Skip checking if local repo is dirty',
-                      action='store_true',
-                      default=False)
-    parser.add_option('--skip-commit-changes',
-                      dest='commitchanges',
-                      help='Skip commiting generated version files',
-                      action='store_false',
-                      default=True)
+    parser = argparse.ArgumentParser(prog="avakas",
+                                     description='Process some integers.')
 
-    if operation in ('set', 'bump'):
-        parser.add_option('--with-hooks',
-                          dest='with_hooks',
-                          help='Run git hooks',
+    subparsers = parser.add_subparsers(dest='operation')
+
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument('--tag-prefix', dest='tag_prefix',
+                        help='Prefix for version tag name',
+                        default=None)
+
+    common.add_argument('--branch', dest='branch',
+                        help='Branch to use when updating git',
+                        default='master')
+
+    common.add_argument('--remote', dest='remote',
+                        help='Git remote',
+                        default='origin')
+
+    common.add_argument('--filename', dest='filename',
+                        help='File name. Used for fallback versioning.',
+                        default='version')
+    common.add_argument('--flavor', dest='flavor',
+                        help='Automation flavor for the project',
+                        default='auto')
+    common.add_argument('directory', nargs=1,
+                        help='Directory of the project', default='.')
+
+    writable = argparse.ArgumentParser(add_help=False)
+    writable.add_argument('--skip-dirty', dest='skipdirty',
+                          help='Skip checking if local repo is dirty',
+                          action='store_true',
                           default=False)
-
-    if operation == 'show':
-        parser.add_option('--build',
-                          dest='build',
-                          help='Will include build information '
-                          'in build semver component',
-                          action='store_true')
-        parser.add_option('--pre-build',
-                          dest='prebuild',
-                          help='Will include prebuild information. If '
-                          ' no other prebuild options are specified '
-                          ' then it will simply use the build info in place.',
-                          action='store_true')
-        parser.add_option('--pre-build-date',
-                          dest='prebuild_date',
-                          help='Include a string representation of the '
-                          'current date, down to the second, as part '
-                          'of the prebuild.',
-                          action='store_true')
-        parser.add_option('--pre-build-prefix',
-                          dest='prebuild_prefix',
-                          help='Use the given string as a prebuild prefix')
-    else:
-        parser.add_option('--dry-run',
+    writable.add_argument('--skip-commit-changes', dest='commitchanges',
+                          help='Skip commiting generated version files',
+                          action='store_false',
+                          default=True)
+    writable.add_argument('--with-hooks', dest='with_hooks',
+                          help='Run git hooks', default=False)
+    writable.add_argument('--dry-run',
                           dest='dry',
                           help='Will not push to git',
                           action='store_true')
 
-    (opt, args) = parser.parse_args()
-    if operation == 'help':
-        usage(parser)
-        sys.exit(0)
-    else:
-        if len(args) < 2:
-            usage(parser)
-            sys.exit(1)
+    set_p = subparsers.add_parser('set', parents=[common, writable])
+    set_p.add_argument('version', nargs=1,
+                       help='Desired version to set')
 
-    return (operation, opt, args)
+    bump_p = subparsers.add_parser('bump', parents=[common, writable])
+    bump_p.add_argument('level', nargs=1, choices=bump_levels,
+                        help='Level to bump at', default='auto')
+
+    show_p = subparsers.add_parser('show', parents=[common])
+    show_p.add_argument('--build',
+                        dest='build',
+                        help='Will include build information '
+                        'in build semver component',
+                        action='store_true')
+    show_p.add_argument('--pre-build',
+                        dest='prebuild',
+                        help='Will include prebuild information. If '
+                        ' no other prebuild options are specified '
+                        ' then it will simply use the build info in place.',
+                        action='store_true')
+    show_p.add_argument('--pre-build-date',
+                        dest='prebuild_date',
+                        help='Include a string representation of the '
+                        'current date, down to the second, as part '
+                        'of the prebuild.',
+                        action='store_true')
+    show_p.add_argument('--pre-build-prefix',
+                        dest='prebuild_prefix',
+                        help='Use the given string as a prebuild prefix',
+                        default=None)
+
+    return parser.parse_args()
 
 
 def main():
     """Dat entrypoint"""
-    if len(sys.argv) < 2:
-        usage()
-        sys.exit(1)
+    parser = argparse.ArgumentParser(prog="avakas")
+    args = parse_args(parser)
 
-    parser = OptionParser()
-    (operation, opt, args) = parse_args(parser)
-
-    directory = os.path.abspath(args[1])
+    directory = os.path.abspath(args.directory[0])
 
     if not os.path.exists(directory):
-        problems("Directory %s does not exist." % directory)
+        raise AvakasError("Directory %s does not exist." % directory)
 
-    if operation == 'bump':
-        bump = 'dev'
-        if len(args) >= 3:
-            bump = args[2].lower()
-            if bump in ('patch', 'minor', 'major', 'pre', 'auto'):
-                repo = load_git(directory, opt)
-                version = bump_version(repo, directory, bump, opt)
-                write_git(repo, directory, version, opt)
-                sys.exit(0)
-    elif operation == 'show':
-        if opt.build and opt.prebuild and not \
-           (opt.prebuild_prefix or opt.prebuild_date):
-            problems('Cannot specify --build with empty --prebuild')
-        show_version(directory, opt)
-        sys.exit(0)
-    elif operation == 'set':
-        if len(args) == 3:
-            repo = load_git(directory, opt)
-            version = args[2]
-            set_version(directory, version, opt)
-            write_git(repo, directory, version, opt)
-            sys.exit(0)
+    try:
+        if args.operation == 'bump':
+            cli_bump_version(directory, args)
+        elif args.operation == 'show':
+            cli_show_version(directory, args)
+        elif args.operation == 'set':
+            cli_set_version(directory, args)
+    except AvakasError as err:
+        print("Problem: %s" % err.message, file=sys.stderr)
+        sys.exit(1)
 
-    usage(parser)
-    sys.exit(1)
+    sys.exit(0)

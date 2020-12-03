@@ -5,7 +5,7 @@ Avakas Built-In Ansible Project Flavor
 import sys
 import os
 
-from avakas.flavors.base import AvakasProject, AvakasGitProject
+from avakas.flavors.base import AvakasGitProject
 from avakas.avakas import register_flavor
 
 
@@ -30,5 +30,10 @@ class AvakasAnsibleProject(AvakasGitProject):
         return os.path.exists("%s/meta/main.yml" % self.directory)
 
     def set_version(self, version):
-        AvakasProject.set_version(self, "v%s" % version)
-        super().set_version("v%s" % version)
+        # write to version file
+        path = os.path.join(self.directory, self.version_filename)
+        version_file = open(path, 'w')
+        version_file.write("v%s\n" % str(version))
+        version_file.close()
+        # set git tag
+        super().set_version(version)

@@ -28,7 +28,9 @@ class AvakasChefProject(AvakasProject):
         metadata_handle.close()
         pattern = r'^version.+["\'](?P<vsn>\d+\.\d+\.\d+)["\'].*'
         vsn_match = re.compile(pattern, re.MULTILINE).search(metadata)
-        return str(vsn_match.group('vsn'))
+        version = str(vsn_match.group('vsn'))
+        super().set_version(version)
+        return self.version
 
     def set_version(self, version):
         """Writes the version to metadata.rb"""
