@@ -277,7 +277,7 @@ def parse_args(parser):
                         default='version')
     common.add_argument('--flavor', dest='flavor',
                         help='Automation flavor for the project',
-                        default='legacy')
+                        default='auto')
     common.add_argument('directory', nargs=1,
                         help='Directory of the project', default='.')
 
@@ -325,7 +325,8 @@ def parse_args(parser):
                         action='store_true')
     show_p.add_argument('--pre-build-prefix',
                         dest='prebuild_prefix',
-                        help='Use the given string as a prebuild prefix')
+                        help='Use the given string as a prebuild prefix',
+                        default=None)
 
     return parser.parse_args()
 
