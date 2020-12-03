@@ -204,63 +204,17 @@ def cli_set_version(directory, opt):
 
 def ci_build_meta():
     """Return any CI system specific build metadata"""
-    ci_version = None
+    meta = ()
     if 'BUILD_NUMBER' in os.environ:
-        ci_version = os.environ['BUILD_NUMBER']
+        meta = (os.environ['BUILD_NUMBER'],)
     elif 'TRAVIS_BUILD_NUMBER' in os.environ:
-        ci_version = os.environ['TRAVIS_BUILD_NUMBER']
+        meta = (os.environ['TRAVIS_BUILD_NUMBER'],)
     elif 'CIRCLE_BUILD_NUM' in os.environ:
-        ci_version = os.environ['CIRCLE_BUILD_NUM']
+        meta = (os.environ['CIRCLE_BUILD_NUM'],)
     elif ('GITHUB_RUN_ID' in os.environ) and \
          ('GITHUB_RUN_NUMBER' in os.environ):
-        ci_version = "%s.%s" % (os.environ['GITHUB_RUN_ID'],
-                                os.environ['GITHUB_RUN_NUMBER'])
-
-    return ci_version
-
-
-def prebuild_meta():
-    """Generate pre-build metadata"""
-    time_fmt = "%Y%m%d%H%M%S"
-    now_str = datetime.utcnow().strftime(time_fmt)
-    return now_str
-
-
-def append_prebuild_version(opt, git_str, artifact_version):
-    """Append the prebuild version component if so desired."""
-    if not (opt.prebuild_prefix or opt.prebuild_date):
-        if artifact_version.prerelease:
-            artifact_version.prerelease = artifact_version.prerelease \
-                                          + (git_str,)
-        else:
-            artifact_version.prerelease = (git_str,)
-
-        ci_version = ci_build_meta()
-        if ci_version:
-            artifact_version.prerelease = artifact_version.prerelease \
-                                          + (ci_version,)
-    else:
-        if opt.prebuild_prefix:
-            artifact_version.prerelease = artifact_version.prerelease \
-                                          + (opt.prebuild_prefix,)
-
-        if opt.prebuild_date:
-            artifact_version.prerelease = artifact_version.prerelease \
-                                          + (prebuild_meta(),)
-
-
-def append_build_version(git_str, artifact_version):
-    """Append the build version component if so desired."""
-    if artifact_version.build:
-        artifact_version.build = artifact_version.build \
-                                 + (git_str,)
-    else:
-        artifact_version.build = (git_str,)
-
-    ci_version = ci_build_meta()
-    if ci_version:
-        artifact_version.build = artifact_version.build \
-                                 + (ci_version,)
+        meta = (os.environ['GITHUB_RUN_ID'], os.environ['GITHUB_RUN_NUMBER'],)
+    return meta
 
 
 def cli_show_version(directory, opt):
@@ -270,18 +224,29 @@ def cli_show_version(directory, opt):
         raise AvakasError('Cannot specify build without prebuild')
 
     project = detect_project_flavor(directory=directory, opt=opt.__dict__)
-    artifact_version = Version(project.get_version())
+    artifact_version = project.get_version()
 
     if not artifact_version:
         raise AvakasError('Unable to extract current version')
 
+    now = None
+    if opt.prebuild_date:
+        time_fmt = "%Y%m%d%H%M%S"
+        now = datetime.utcnow().strftime(time_fmt)
+
     git_str = str(git_rev(directory))
     if opt.build:
-        append_build_version(git_str, artifact_version)
+        metadata = (git_str,)
+        metadata += ci_build_meta()
+        project.apply_metadata(*metadata)
     if opt.prebuild:
-        append_prebuild_version(opt, git_str, artifact_version)
+        prebuild = (git_str,)
+        prebuild += ci_build_meta()
+        project.apply_prebuild(*prebuild,
+                               prefix=opt.prebuild_prefix,
+                               prebuild_date=now)
 
-    print("%s" % str(artifact_version))
+    print("%s" % str(project.version))
 
 
 def parse_args(parser):

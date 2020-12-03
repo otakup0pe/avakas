@@ -84,6 +84,20 @@ class Avakas():
 
         return new_version
 
+    def apply_metadata(self, *metadata):
+        """Apply build metadata to project version"""
+        self.version.build += metadata
+
+    def apply_prebuild(self, *prebuild, prefix=None, prebuild_date=None):
+        """Apply prebuild data to project version"""
+        if not (prefix or prebuild_date):
+            self.version.prerelease += prebuild
+        else:
+            if prefix:
+                self.version.prerelease += (prefix,)
+            if prebuild_date:
+                self.version.prerelease += (prebuild_date,)
+
 
 def register_flavor(flavor):
     """
