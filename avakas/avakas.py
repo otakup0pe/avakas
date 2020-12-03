@@ -34,7 +34,7 @@ def detect_project_flavor(**kwargs):
 
 class Avakas():
     """
-    Main instance of Avakas
+    Main instance of Avakas associated to a project and it's version
     """
     project_flavors = {}
 
@@ -51,7 +51,7 @@ class Avakas():
     def set_version(self, version):
         """Set version"""
         if isinstance(self.version, Version):
-            raise TypeError("Must be type Version")
+            raise TypeError("Must be type str")
         self.version = Version(version)
 
     def bump(self, bump):
