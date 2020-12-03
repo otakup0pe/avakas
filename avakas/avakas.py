@@ -22,18 +22,20 @@ def detect_project_flavor(**kwargs):
                    if f(**kwargs).guess_flavor()]
 
         if len(matched) == 1:
-            return matched[0](**kwargs)
+            project = matched[0](**kwargs)
         elif len(matched) == 0:
-            return Avakas.project_flavors['legacy'](**kwargs)
+            project = Avakas.project_flavors['legacy'](**kwargs)
         else:
             matched_names = [f.PROJECT_TYPE for f in matched]
             raise AvakasError("Multiple project flavor matches: %s" %
                               ", ".join(matched_names))
     else:
         if flavor in Avakas.project_flavors:
-            return Avakas.project_flavors[flavor](**kwargs)
+            project = Avakas.project_flavors[flavor](**kwargs)
         else:
             raise AvakasError('Unable to find flavor "%s"' % flavor)
+
+    return project
 
 
 class Avakas():
@@ -48,20 +50,19 @@ class Avakas():
 
     def get_version(self):
         """Get version"""
-        if isinstance(self.version, Version):
-            raise TypeError("Must be type str")
-        return self.version
+        return str(self.version)
 
     def set_version(self, version):
         """Set version"""
-        if isinstance(self.version, Version):
-            raise TypeError("Must be type str")
-        self.version = Version(version)
+        if isinstance(version, str):
+            self.version = Version(version)
+        else:
+            self.version = version
 
     def bump(self, bump):
         """Bump version"""
         new_version = None
-        old_version = Version(self.version)
+        old_version = self.version
         if bump == 'patch':
             new_version = old_version.next_patch()
         elif bump == 'minor':

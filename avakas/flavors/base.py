@@ -43,7 +43,7 @@ class AvakasProject(Avakas):
         """
         path = os.path.join(self.directory, self.version_filename)
         version_file = open(path, 'r')
-        self.version = version_file.read()
+        super().set_version(version_file.read())
         version_file.close()
         return super().get_version()
 
@@ -53,8 +53,9 @@ class AvakasProject(Avakas):
         """
         path = os.path.join(self.directory, self.version_filename)
         version_file = open(path, 'w')
-        self.version = version_file.write("%s\n" % str(version))
+        version_file.write("%s\n" % str(version))
         version_file.close()
+        super().set_version(version)
 
 
 @register_flavor('git')
@@ -90,8 +91,5 @@ class AvakasGitProject(AvakasProject):
         fixed_tags = [t.lstrip('v') for t in tags]
         sorted_versions = sorted(fixed_tags, key=cmp_to_key(semver_compare))
 
-        self.version = sorted_versions[-1]
+        super().set_version(str(sorted_versions[-1]))
         return self.version
-
-    def set_version(self, version):
-        pass
