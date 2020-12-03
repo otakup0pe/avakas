@@ -5,8 +5,6 @@ Avakas Built-In Chef Project Flavor
 import os
 import re
 
-from semantic_version import Version
-
 from avakas.flavors.base import AvakasProject
 from avakas.avakas import register_flavor
 from avakas.errors import AvakasError

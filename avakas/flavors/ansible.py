@@ -5,8 +5,6 @@ Avakas Built-In Ansible Project Flavor
 import sys
 import os
 
-from semantic_version import Version
-
 from avakas.flavors.base import AvakasProject, AvakasGitProject
 from avakas.avakas import register_flavor
 
