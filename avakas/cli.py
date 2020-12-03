@@ -12,7 +12,7 @@ import os
 import re
 import sys
 from datetime import datetime
-from optparse import OptionParser
+import argparse
 import contextlib
 
 from semantic_version import Version
@@ -280,116 +280,111 @@ def show_version(directory, opt):
 def parse_args(parser):
     """Parse our command line arguments."""
 
-    operation = sys.argv[1]
+    BUMP_LEVELS = ['pre', 'patch', 'minor', 'major', 'auto']
 
-    parser.add_option('--tag-prefix',
-                      dest='tag_prefix',
-                      help='Prefix for version tag name',
-                      default=None)
-    parser.add_option('--branch',
-                      dest='branch',
-                      help='Branch to use when updating git',
-                      default='master')
-    parser.add_option('--remote',
-                      dest='remote',
-                      help='Git remote',
-                      default='origin')
-    parser.add_option('--filename',
-                      dest='filename',
-                      help='File name. Used for fallback versioning.',
-                      default='version')
-    parser.add_option('--skip-dirty',
-                      dest='skipdirty',
-                      help='Skip checking if local repo is dirty',
-                      action='store_true',
-                      default=False)
-    parser.add_option('--skip-commit-changes',
-                      dest='commitchanges',
-                      help='Skip commiting generated version files',
-                      action='store_false',
-                      default=True)
+    parser = argparse.ArgumentParser(prog="avakas",
+                                     description='Process some integers.')
 
-    if operation in ('set', 'bump'):
-        parser.add_option('--with-hooks',
-                          dest='with_hooks',
-                          help='Run git hooks',
-                          default=False)
+    subparsers = parser.add_subparsers(dest='operation')
 
-    if operation == 'show':
-        parser.add_option('--build',
-                          dest='build',
-                          help='Will include build information '
-                          'in build semver component',
-                          action='store_true')
-        parser.add_option('--pre-build',
-                          dest='prebuild',
-                          help='Will include prebuild information. If '
-                          ' no other prebuild options are specified '
-                          ' then it will simply use the build info in place.',
-                          action='store_true')
-        parser.add_option('--pre-build-date',
-                          dest='prebuild_date',
-                          help='Include a string representation of the '
-                          'current date, down to the second, as part '
-                          'of the prebuild.',
-                          action='store_true')
-        parser.add_option('--pre-build-prefix',
-                          dest='prebuild_prefix',
-                          help='Use the given string as a prebuild prefix')
-    else:
-        parser.add_option('--dry-run',
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument('--tag-prefix', dest='tag_prefix',
+                        help='Prefix for version tag name',
+                        default=None)
+
+    common.add_argument('--branch', dest='branch',
+                        help='Branch to use when updating git',
+                        default='master')
+
+    common.add_argument('--remote', dest='remote',
+                        help='Git remote',
+                        default='origin')
+
+    common.add_argument('--filename', dest='filename',
+                        help='File name. Used for fallback versioning.',
+                        default='version')
+
+    common.add_argument('--skip-dirty', dest='skipdirty',
+                        help='Skip checking if local repo is dirty',
+                        action='store_true',
+                        default=False)
+
+    common.add_argument('--skip-commit-changes', dest='commitchanges',
+                        help='Skip commiting generated version files',
+                        action='store_false',
+                        default=True)
+    common.add_argument('directory', nargs=1,
+                        help='Directory of the project', default='.')
+
+    writable = argparse.ArgumentParser(add_help=False)
+    writable.add_argument('--with-hooks', dest='with_hooks',
+                          help='Run git hooks', default=False)
+    writable.add_argument('--dry-run',
                           dest='dry',
                           help='Will not push to git',
                           action='store_true')
 
-    (opt, args) = parser.parse_args()
-    if operation == 'help':
-        usage(parser)
-        sys.exit(0)
-    else:
-        if len(args) < 2:
-            usage(parser)
-            sys.exit(1)
+    set_p = subparsers.add_parser('set', parents=[common, writable])
+    set_p.add_argument('version', nargs=1,
+                       help='Desired version to set', default='auto')
 
-    return (operation, opt, args)
+    bump_p = subparsers.add_parser('bump', parents=[common, writable])
+    bump_p.add_argument('level', nargs=1, choices=BUMP_LEVELS,
+                        help='Level to bump at', default='auto')
+
+    show_p = subparsers.add_parser('show', parents=[common])
+    show_p.add_argument('--build',
+                        dest='build',
+                        help='Will include build information '
+                        'in build semver component',
+                        action='store_true')
+    show_p.add_argument('--pre-build',
+                        dest='prebuild',
+                        help='Will include prebuild information. If '
+                        ' no other prebuild options are specified '
+                        ' then it will simply use the build info in place.',
+                        action='store_true')
+    show_p.add_argument('--pre-build-date',
+                        dest='prebuild_date',
+                        help='Include a string representation of the '
+                        'current date, down to the second, as part '
+                        'of the prebuild.',
+                        action='store_true')
+    show_p.add_argument('--pre-build-prefix',
+                        dest='prebuild_prefix',
+                        help='Use the given string as a prebuild prefix')
+
+    return parser.parse_args()
 
 
 def main():
     """Dat entrypoint"""
-    if len(sys.argv) < 2:
-        usage()
-        sys.exit(1)
+    parser = argparse.ArgumentParser(prog="avakas")
+    args = parse_args(parser)
 
-    parser = OptionParser()
-    (operation, opt, args) = parse_args(parser)
-
-    directory = os.path.abspath(args[1])
+    directory = os.path.abspath(args.directory[0])
 
     if not os.path.exists(directory):
         problems("Directory %s does not exist." % directory)
 
-    if operation == 'bump':
-        bump = 'dev'
-        if len(args) >= 3:
-            bump = args[2].lower()
-            if bump in ('patch', 'minor', 'major', 'pre', 'auto'):
-                repo = load_git(directory, opt)
-                version = bump_version(repo, directory, bump, opt)
-                write_git(repo, directory, version, opt)
-                sys.exit(0)
-    elif operation == 'show':
-        if opt.build and opt.prebuild and not \
-           (opt.prebuild_prefix or opt.prebuild_date):
-            problems('Cannot specify --build with empty --prebuild')
-        show_version(directory, opt)
+    if args.operation == 'bump':
+        bump = args.level[0]
+        repo = load_git(directory, args)
+        version = bump_version(repo, directory, bump, args)
+        write_git(repo, directory, version, args)
         sys.exit(0)
-    elif operation == 'set':
-        if len(args) == 3:
-            repo = load_git(directory, opt)
-            version = args[2]
-            set_version(directory, version, opt)
-            write_git(repo, directory, version, opt)
-            sys.exit(0)
+    elif args.operation == 'show':
+        if args.build and args.prebuild and not \
+           (args.prebuild_prefix or args.prebuild_date):
+            problems('Cannot specify --build with empty --prebuild')
+        show_version(directory, args)
+        sys.exit(0)
+    elif args.operation == 'set':
+        repo = load_git(directory, args)
+        version = args.version[0]
+        set_version(directory, version, args)
+        write_git(repo, directory, version, args)
+        sys.exit(0)
 
     usage(parser)
     sys.exit(1)

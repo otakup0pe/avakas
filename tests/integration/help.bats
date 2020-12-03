@@ -12,5 +12,5 @@ teardown() {
 }
 
 @test "help is ok" {
-    avakas_wrapper help
+    avakas_wrapper --help
 }
