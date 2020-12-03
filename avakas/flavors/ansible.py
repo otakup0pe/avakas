@@ -33,7 +33,7 @@ class AvakasAnsibleProject(AvakasGitProject):
 
     def get_version(self):
         version = super().get_version()
-        self.version = Version(str(version))
+        self.version = str(version)
         return self.version
 
     def set_version(self, version):

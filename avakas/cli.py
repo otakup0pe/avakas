@@ -132,31 +132,6 @@ def load_git(directory, opt):
     return repo
 
 
-def transmogrify_version(version, bump):
-    """Update the version string."""
-    new_version = None
-    if bump == 'patch':
-        new_version = version.next_patch()
-    elif bump == 'minor':
-        new_version = version.next_minor()
-    elif bump == 'major':
-        new_version = version.next_major()
-    elif bump == 'pre':
-        new_version = Version(str(version))
-        prereleases = len(new_version.prerelease)
-        if prereleases == 1:
-            new_version.prerelease = (str(int(new_version.prerelease[0]) + 1))
-        elif prereleases == 0:
-            new_version.prerelease = ('1')
-        else:
-            problems("Unexpected version prerelease")
-
-    else:
-        problems("Invalid version component")
-
-    return new_version
-
-
 def get_repo(directory):
     """Load the git repository."""
     return Repo(directory, search_parent_directories=True)
@@ -167,7 +142,7 @@ def git_rev(directory):
     return str(get_repo(directory).head.commit)[0:8]
 
 
-def bump_auto(artifact_version, repo, opt):
+def determine_bump(artifact_version, repo, opt):
     """Will go through the Git history until the last version bump
     and look for hints that we want to "automatically" bump
     our version"""
@@ -190,11 +165,7 @@ def bump_auto(artifact_version, repo, opt):
             elif vsn == 'minor' and bump == 'major':
                 vsn = 'major'
 
-    if not vsn:
-        print("No auto bump indicators", file=sys.stderr)
-        sys.exit(0)
-
-    return transmogrify_version(artifact_version, vsn)
+    return vsn
 
 
 def bump_version(repo, directory, bump, opt):
@@ -203,10 +174,12 @@ def bump_version(repo, directory, bump, opt):
     artifact_version = project.get_version()
 
     if bump == 'auto':
-        new_version = bump_auto(artifact_version, repo, opt)
-    else:
-        new_version = transmogrify_version(artifact_version, bump)
+        bump = determine_bump(artifact_version, repo, opt)
+        if not bump:
+            print("No auto bump indicators", file=sys.stderr)
+            sys.exit(0)
 
+    new_version = project.bump(bump)
     project.set_version(new_version)
 
     print("Version updated from %s to %s" % (artifact_version, new_version))
@@ -290,7 +263,7 @@ def append_build_version(git_str, artifact_version):
 def show_version(directory, opt):
     """Show the current flavour specific version for a project."""
     project = detect_project_flavor(directory=directory, opt=opt.__dict__)
-    artifact_version = project.get_version()
+    artifact_version = Version(project.get_version())
 
     if not artifact_version:
         problems('Unable to extract current version')

@@ -7,6 +7,8 @@ import os
 
 from semantic_version import Version
 
+from .errors import AvakasError
+
 
 def detect_project_flavor(**kwargs):
     """
@@ -42,15 +44,41 @@ class Avakas():
 
     def get_version(self):
         """Get version"""
-        if isinstance(self.version, str):
-            version = Version(self.version)
-        else:
-            version = self.version
-        return version
+        if isinstance(self.version, Version):
+            raise TypeError("Must be type str")
+        return self.version
 
     def set_version(self, version):
         """Set version"""
+        if isinstance(self.version, Version):
+            raise TypeError("Must be type Version")
         self.version = Version(version)
+
+    def bump(self, bump):
+        """Bump version"""
+        new_version = None
+        old_version = Version(self.version)
+        if bump == 'patch':
+            new_version = old_version.next_patch()
+        elif bump == 'minor':
+            new_version = old_version.next_minor()
+        elif bump == 'major':
+            new_version = old_version.next_major()
+        elif bump == 'pre':
+            new_version = old_version
+            prereleases = len(new_version.prerelease)
+            if prereleases == 1:
+                new_version.prerelease = (str(
+                                          int(new_version.prerelease[0]) + 1))
+            elif prereleases == 0:
+                new_version.prerelease = ('1')
+            else:
+                new_version = AvakasError("Unexpected version prerelease")
+
+        else:
+            new_version = AvakasError("Invalid version component")
+
+        return new_version
 
 
 def register_flavor(flavor):

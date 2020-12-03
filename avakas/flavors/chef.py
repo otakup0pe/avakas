@@ -30,7 +30,7 @@ class AvakasChefProject(AvakasProject):
         metadata_handle.close()
         pattern = r'^version.+["\'](?P<vsn>\d+\.\d+\.\d+)["\'].*'
         vsn_match = re.compile(pattern, re.MULTILINE).search(metadata)
-        self.version = Version(str(vsn_match.group('vsn')))
+        self.version = str(vsn_match.group('vsn'))
         return self.version
 
     def set_version(self, version):
