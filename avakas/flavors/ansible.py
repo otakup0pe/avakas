@@ -5,6 +5,8 @@ Avakas Built-In Ansible Project Flavor
 import sys
 import os
 
+from semantic_version import Version
+
 from avakas.flavors.base import AvakasProject, AvakasGitProject
 from avakas.avakas import register_flavor
 
@@ -29,6 +31,14 @@ class AvakasAnsibleProject(AvakasGitProject):
     def guess_flavor(self):
         return os.path.exists("%s/meta/main.yml" % self.directory)
 
+    def get_version(self):
+        version = super().get_version()
+        self.version = Version(str(version))
+        return self.version
+
     def set_version(self, version):
-        AvakasProject.set_version(self, "v%s" % version)
-        super().set_version("v%s" % version)
+        # write to version file
+        AvakasProject.set_version(self, "v%s" % str(version))
+        self.version = version
+        # set git tag
+        super().set_version("v%s" % str(version))

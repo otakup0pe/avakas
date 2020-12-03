@@ -19,7 +19,7 @@ from semantic_version import Version
 
 from git import Repo
 
-from .avakas import Avakas
+from .avakas import detect_project_flavor
 
 
 @contextlib.contextmanager
@@ -85,8 +85,7 @@ def write_git(repo, directory, vsn_str, opt):
 
         return
 
-    ava = Avakas(directory=directory, opt=opt.__dict__)
-    project = ava.flavor
+    project = detect_project_flavor(directory=directory, opt=opt.__dict__)
 
     if project.version_filename and opt.commitchanges:
         repo.index.add([project.version_filename])
@@ -200,9 +199,8 @@ def bump_auto(artifact_version, repo, opt):
 
 def bump_version(repo, directory, bump, opt):
     """Bump the flavour specific version for a project."""
-    ava = Avakas(directory=directory, opt=opt.__dict__)
-    project = ava.flavor
-    artifact_version = Version(project.get_version())
+    project = detect_project_flavor(directory=directory, opt=opt.__dict__)
+    artifact_version = project.get_version()
 
     if bump == 'auto':
         new_version = bump_auto(artifact_version, repo, opt)
@@ -218,12 +216,11 @@ def bump_version(repo, directory, bump, opt):
 def set_version(directory, version, opt):
     """Manually set the flavour specific version for a project."""
     try:
-        version = Version(version)
+        Version(version)
     except ValueError:
         problems("Invalid version string %s" % version)
 
-    ava = Avakas(directory=directory, opt=opt.__dict__)
-    project = ava.flavor
+    project = detect_project_flavor(directory=directory, opt=opt.__dict__)
     project.set_version(version)
 
     print("Version set to %s" % version)
@@ -292,9 +289,8 @@ def append_build_version(git_str, artifact_version):
 
 def show_version(directory, opt):
     """Show the current flavour specific version for a project."""
-    ava = Avakas(directory=directory, opt=opt.__dict__)
-    project = ava.flavor
-    artifact_version = Version(project.get_version())
+    project = detect_project_flavor(directory=directory, opt=opt.__dict__)
+    artifact_version = project.get_version()
 
     if not artifact_version:
         problems('Unable to extract current version')

@@ -5,6 +5,8 @@ Avakas Built-In Chef Project Flavor
 import os
 import re
 
+from semantic_version import Version
+
 from avakas.flavors.base import AvakasProject
 from avakas.avakas import register_flavor
 from avakas.errors import AvakasError
@@ -28,7 +30,8 @@ class AvakasChefProject(AvakasProject):
         metadata_handle.close()
         pattern = r'^version.+["\'](?P<vsn>\d+\.\d+\.\d+)["\'].*'
         vsn_match = re.compile(pattern, re.MULTILINE).search(metadata)
-        return str(vsn_match.group('vsn'))
+        self.version = Version(str(vsn_match.group('vsn')))
+        return self.version
 
     def set_version(self, version):
         """Writes the version to metadata.rb"""

@@ -8,17 +8,18 @@ import subprocess
 from semantic_version import compare as semver_compare
 
 from avakas.errors import AvakasError
-from avakas.avakas import register_flavor
+from avakas.avakas import Avakas, register_flavor
 
 
 @register_flavor('default')
-class AvakasProject():
+class AvakasProject(Avakas):
     """
     Default Avakas Project Flavor
     """
     PROJECT_TYPE = 'default'
 
     def __init__(self, **kwargs):
+        super().__init__()
         self.options = kwargs.get('opt', {})
         self.tag_prefix = self.options.get('tag_prefix', 'v')
         self.version_filename = self.options.get('filename', 'version')
@@ -42,9 +43,9 @@ class AvakasProject():
         """
         path = os.path.join(self.directory, self.version_filename)
         version_file = open(path, 'r')
-        version = version_file.read()
+        self.version = version_file.read()
         version_file.close()
-        return version
+        return super().get_version()
 
     def set_version(self, version):
         """
@@ -52,7 +53,7 @@ class AvakasProject():
         """
         path = os.path.join(self.directory, self.version_filename)
         version_file = open(path, 'w')
-        version = version_file.write("%s\n" % str(version))
+        self.version = version_file.write("%s\n" % str(version))
         version_file.close()
 
 
@@ -89,7 +90,8 @@ class AvakasGitProject(AvakasProject):
         fixed_tags = [t.lstrip('v') for t in tags]
         sorted_versions = sorted(fixed_tags, key=cmp_to_key(semver_compare))
 
-        return sorted_versions[-1]
+        self.version = sorted_versions[-1]
+        return self.version
 
     def set_version(self, version):
         pass
