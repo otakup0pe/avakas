@@ -44,7 +44,7 @@ teardown() {
     commit_message "$REPO" "still here tho"
     avakas_wrapper bump "$REPO" auto
     avakas_wrapper show "$REPO"
-    [ "$output" == "0.3.0" ]    
+    [ "$output" == "0.3.0" ]
 }
 @test "autobump a plain version - major" {
     commit_message "$REPO" "some thing\nbump:major"
@@ -59,11 +59,34 @@ teardown() {
     [ "$output" == "2.0.0" ]
     commit_message "$REPO" "some boring junk\nbump:patch"
     commit_message "$REPO" "slightly less boring junk\nbump:major"
-    commit_message "$REPO" "some boring junk\nbump:minor"    
+    commit_message "$REPO" "some boring junk\nbump:minor"
     commit_message "$REPO" "still here tho"
     avakas_wrapper bump "$REPO" auto
     avakas_wrapper show "$REPO"
-    [ "$output" == "3.0.0" ]    
+    [ "$output" == "3.0.0" ]
+}
+@test "autobump with a default bump - patch" {
+    commit_message "$REPO" "some thing\nbump:major"
+    avakas_wrapper bump "$REPO" auto --default-bump patch
+    avakas_wrapper show "$REPO"
+    [ "$output" == "1.0.0" ]
+    commit_message "$REPO" "some boring junk"
+    commit_message "$REPO" "more boring junk"
+    commit_message "$REPO" "we who are dreamers\nbump:major"
+    avakas_wrapper bump "$REPO" auto --default-bump patch
+    avakas_wrapper show "$REPO"
+    [ "$output" == "2.0.0" ]
+    commit_message "$REPO" "some boring junk\nbump:patch"
+    commit_message "$REPO" "slightly less boring junk\nbump:major"
+    commit_message "$REPO" "some boring junk\nbump:minor"
+    commit_message "$REPO" "still here tho"
+    avakas_wrapper bump "$REPO" auto --default-bump patch
+    avakas_wrapper show "$REPO"
+    [ "$output" == "3.0.0" ]
+    commit_message "$REPO" "some last minute boring junk"
+    avakas_wrapper bump "$REPO" auto --default-bump patch
+    avakas_wrapper show "$REPO"
+    [ "$output" == "3.0.1" ]
 }
 
 @test "autobump a plain version - complex" {
@@ -88,5 +111,5 @@ teardown() {
     commit_message "$REPO" "oh hey feature tho\nbump:minor"
     avakas_wrapper bump "$REPO" auto
     avakas_wrapper show "$REPO"
-    [ "$output" == "1.1.0" ]    
+    [ "$output" == "1.1.0" ]
 }

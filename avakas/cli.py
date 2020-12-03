@@ -174,12 +174,18 @@ def cli_bump_version(directory, opt):
     if bump == 'auto':
         bump = determine_bump(repo, opt)
         if not bump:
-            print("No auto bump indicators", file=sys.stderr)
-            sys.exit(0)
+            if opt.default_bump:
+                bump = opt.default_bump
+            else:
+                # Exit safely since no bump was detected and desired
+                print("No auto bump indicators", file=sys.stderr)
+                sys.exit(0)
 
-    new_version = project.bump(bump)
-    project.set_version(new_version)
+    project.bump(bump)
+    project = add_metadata(project, directory, opt)
+    project.set_version(project.version)
 
+    new_version = str(project.version)
     write_git(repo, directory, new_version, opt)
 
     print("Version updated from %s to %s" % (artifact_version, new_version))
@@ -189,17 +195,39 @@ def cli_set_version(directory, opt):
     """Manually set the flavour specific version for a project."""
     version = opt.version[0]
     repo = load_git(directory, opt)
+    project = detect_project_flavor(directory=directory, opt=opt.__dict__)
     try:
-        Version(version)
+        project.version = Version(version)
     except ValueError as err:
         raise AvakasError("Invalid version string %s" % version) from err
 
-    project = detect_project_flavor(directory=directory, opt=opt.__dict__)
-    project.set_version(version)
+    project = add_metadata(project, directory, opt)
+    project.set_version(project.version)
 
     write_git(repo, directory, version, opt)
 
     print("Version set to %s" % version)
+
+
+def add_metadata(project, directory, opt):
+    """
+    Add metadata for set/bump actions
+    """
+    git_str = str(git_rev(directory))
+    if opt.buildmeta and not project.version.build:
+        metadata = (git_str,)
+        metadata += ci_build_meta()
+        project.apply_metadata(*metadata)
+
+    now = None
+    if opt.prerelease_date:
+        time_fmt = "%Y%m%d%H%M%S"
+        now = datetime.utcnow().strftime(time_fmt)
+
+    if opt.prerelease:
+        project.make_prerelease(prefix=opt.prerelease_prefix,
+                                build_date=now)
+    return project
 
 
 def ci_build_meta():
@@ -219,32 +247,11 @@ def ci_build_meta():
 
 def cli_show_version(directory, opt):
     """Show the current flavour specific version for a project."""
-    if opt.build and opt.prebuild and not \
-       (opt.prebuild_prefix or opt.prebuild_date):
-        raise AvakasError('Cannot specify build without prebuild')
-
     project = detect_project_flavor(directory=directory, opt=opt.__dict__)
     artifact_version = project.get_version()
 
     if not artifact_version:
         raise AvakasError('Unable to extract current version')
-
-    now = None
-    if opt.prebuild_date:
-        time_fmt = "%Y%m%d%H%M%S"
-        now = datetime.utcnow().strftime(time_fmt)
-
-    git_str = str(git_rev(directory))
-    if opt.build:
-        metadata = (git_str,)
-        metadata += ci_build_meta()
-        project.apply_metadata(*metadata)
-    if opt.prebuild:
-        prebuild = (git_str,)
-        prebuild += ci_build_meta()
-        project.apply_prebuild(*prebuild,
-                               prefix=opt.prebuild_prefix,
-                               prebuild_date=now)
 
     print("%s" % str(project.version))
 
@@ -252,7 +259,7 @@ def cli_show_version(directory, opt):
 def parse_args(parser):
     """Parse our command line arguments."""
 
-    bump_levels = ['pre', 'patch', 'minor', 'major', 'auto']
+    bump_levels = ['patch', 'minor', 'major', 'auto']
 
     parser = argparse.ArgumentParser(prog="avakas",
                                      description='Process some integers.')
@@ -282,6 +289,10 @@ def parse_args(parser):
                         help='Directory of the project', default='.')
 
     writable = argparse.ArgumentParser(add_help=False)
+    writable.add_argument('--build-meta', dest='buildmeta',
+                          help='Apply build-meta to version',
+                          action='store_true',
+                          default=False)
     writable.add_argument('--skip-dirty', dest='skipdirty',
                           help='Skip checking if local repo is dirty',
                           action='store_true',
@@ -296,6 +307,22 @@ def parse_args(parser):
                           dest='dry',
                           help='Will not push to git',
                           action='store_true')
+    writable.add_argument('--prerelease',
+                          dest='prerelease',
+                          help='Will include prebuild information. If '
+                          ' no other prebuild options are specified '
+                          ' then it will simply use the build info in place.',
+                          action='store_true')
+    writable.add_argument('--prerelease-date',
+                          dest='prerelease_date',
+                          help='Include a string representation of the '
+                          'current date, down to the second, as part '
+                          'of the prebuild.',
+                          action='store_true')
+    writable.add_argument('--prerelease-prefix',
+                          dest='prerelease_prefix',
+                          help='Use the given string as a prebuild prefix',
+                          default=None)
 
     set_p = subparsers.add_parser('set', parents=[common, writable])
     set_p.add_argument('version', nargs=1,
@@ -304,29 +331,11 @@ def parse_args(parser):
     bump_p = subparsers.add_parser('bump', parents=[common, writable])
     bump_p.add_argument('level', nargs=1, choices=bump_levels,
                         help='Level to bump at', default='auto')
-
-    show_p = subparsers.add_parser('show', parents=[common])
-    show_p.add_argument('--build',
-                        dest='build',
-                        help='Will include build information '
-                        'in build semver component',
-                        action='store_true')
-    show_p.add_argument('--pre-build',
-                        dest='prebuild',
-                        help='Will include prebuild information. If '
-                        ' no other prebuild options are specified '
-                        ' then it will simply use the build info in place.',
-                        action='store_true')
-    show_p.add_argument('--pre-build-date',
-                        dest='prebuild_date',
-                        help='Include a string representation of the '
-                        'current date, down to the second, as part '
-                        'of the prebuild.',
-                        action='store_true')
-    show_p.add_argument('--pre-build-prefix',
-                        dest='prebuild_prefix',
-                        help='Use the given string as a prebuild prefix',
+    bump_p.add_argument('--default-bump', dest='default_bump',
+                        choices=bump_levels, help='Level to bump at',
                         default=None)
+
+    subparsers.add_parser('show', parents=[common])
 
     return parser.parse_args()
 

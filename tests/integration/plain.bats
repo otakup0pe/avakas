@@ -48,20 +48,6 @@ teardown() {
     [ "$output" == "1.0.0" ]
 }
 
-@test "bump a plain version - patch to prerelease" {
-    avakas_wrapper bump "$REPO" pre
-    scan_lines "Version updated from 0.0.1 to 0.0.1-1"  "${lines[@]}"
-    avakas_wrapper show "$REPO"
-    [ "$output" == "0.0.1-1" ]
-
-}
-
-@test "show a plain version - specified filename" {
-    plain_version "$REPO" "0.0.1-1" "foo"
-    avakas_wrapper show "$REPO" --filename "foo"
-    [ "$output" == "0.0.1-1" ]
-}
-
 @test "set a plain version - specified filename" {
     plain_version "$REPO" "0.0.1-1" "foo"
     avakas_wrapper set "$REPO" "0.0.2" --filename "foo"

@@ -61,43 +61,41 @@ class Avakas():
 
     def bump(self, bump):
         """Bump version"""
-        new_version = None
         old_version = self.version
         if bump == 'patch':
-            new_version = old_version.next_patch()
+            self.version = old_version.next_patch()
         elif bump == 'minor':
-            new_version = old_version.next_minor()
+            self.version = old_version.next_minor()
         elif bump == 'major':
-            new_version = old_version.next_major()
-        elif bump == 'pre':
-            new_version = old_version
-            prereleases = len(new_version.prerelease)
-            if prereleases == 1:
-                new_version.prerelease = (str(
-                                          int(new_version.prerelease[0]) + 1))
-            elif prereleases == 0:
-                new_version.prerelease = ('1')
-            else:
-                new_version = AvakasError("Unexpected version prerelease")
-
+            self.version = old_version.next_major()
         else:
-            new_version = AvakasError("Invalid version component")
+            raise AvakasError("Invalid version component")
 
-        return new_version
+    def make_prerelease(self, prefix=None, build_date=None):
+        """Make current version a prerelease"""
+        release_pos = 1 if prefix else 0
+        if self.version.prerelease:
+            release = self.version.prerelease[release_pos]
+        else:
+            release = 1
+
+        self.apply_prerelease((str(release)),
+                              prefix=prefix,
+                              build_date=build_date)
 
     def apply_metadata(self, *metadata):
         """Apply build metadata to project version"""
         self.version.build += metadata
 
-    def apply_prebuild(self, *prebuild, prefix=None, prebuild_date=None):
+    def apply_prerelease(self, *prebuild, prefix=None, build_date=None):
         """Apply prebuild data to project version"""
-        if not (prefix or prebuild_date):
-            self.version.prerelease += prebuild
-        else:
-            if prefix:
-                self.version.prerelease += (prefix,)
-            if prebuild_date:
-                self.version.prerelease += (prebuild_date,)
+        if prefix:
+            self.version.prerelease += (prefix,)
+
+        self.version.prerelease += prebuild
+
+        if build_date:
+            self.version.prerelease += (build_date,)
 
 
 def register_flavor(flavor):
