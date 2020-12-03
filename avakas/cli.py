@@ -46,13 +46,6 @@ def usage(parser=None):
         parser.print_help()
 
 
-def problems(msg):
-    """Simple give-up and error out function."""
-    print("Problem: %s" % msg,
-          file=sys.stderr)
-    sys.exit(1)
-
-
 def git_push(repo, opt, tag=None):
     """Pushes the repository to our remote."""
     if tag:
@@ -61,7 +54,7 @@ def git_push(repo, opt, tag=None):
         info = repo.remotes[opt.remote].push()
     info = info[0]
     if info.flags & 1024 or info.flags & 32 or info.flags & 16:
-        problems("Unexpected git error: %s" % info.summary)
+        raise AvakasError("Unexpected git error: %s" % info.summary)
 
 
 def write_git(repo, directory, vsn_str, opt):
@@ -107,13 +100,14 @@ def load_git(directory, opt):
     """Initializes our local git workspace."""
     repo = get_repo(directory)
     if not repo:
-        problems("Unable to find associated git repo for %s." % directory)
+        raise AvakasError("Unable to find associated git repo for %s." %
+                          directory)
 
     if not opt.skipdirty and repo.is_dirty():
-        problems("Git repo dirty.")
+        raise AvakasError("Git repo dirty.")
 
     if opt.branch not in repo.heads:
-        problems("Branch %s branch not found." % opt.branch)
+        raise AvakasError("Branch %s branch not found." % opt.branch)
 
     if repo.active_branch != repo.heads[opt.branch]:
         print("Switching to %s branch" % opt.branch,
@@ -124,7 +118,7 @@ def load_git(directory, opt):
               file=sys.stderr)
 
     if opt.remote not in [r.name for r in repo.remotes]:
-        problems("Remote %s not found" % opt.remote)
+        raise AvakasError("Remote %s not found" % opt.remote)
 
     # we really do not want to be polluting our stdout when showing the version
     with stdout_redirect():
@@ -143,7 +137,7 @@ def git_rev(directory):
     return str(get_repo(directory).head.commit)[0:8]
 
 
-def determine_bump(artifact_version, repo, opt):
+def determine_bump(repo, opt):
     """Will go through the Git history until the last version bump
     and look for hints that we want to "automatically" bump
     our version"""
@@ -178,7 +172,7 @@ def cli_bump_version(directory, opt):
     bump = opt.level[0]
 
     if bump == 'auto':
-        bump = determine_bump(artifact_version, repo, opt)
+        bump = determine_bump(repo, opt)
         if not bump:
             print("No auto bump indicators", file=sys.stderr)
             sys.exit(0)
@@ -186,24 +180,23 @@ def cli_bump_version(directory, opt):
     new_version = project.bump(bump)
     project.set_version(new_version)
 
-    write_git(repo, directory, new_version, args)
+    write_git(repo, directory, new_version, opt)
 
     print("Version updated from %s to %s" % (artifact_version, new_version))
 
 
-def cli_set_version(directory, version, opt):
+def cli_set_version(directory, opt):
     """Manually set the flavour specific version for a project."""
     version = opt.version[0]
-
+    repo = load_git(directory, opt)
     try:
         Version(version)
-    except ValueError:
-        problems("Invalid version string %s" % version)
+    except ValueError as err:
+        raise AvakasError("Invalid version string %s" % version) from err
 
     project = detect_project_flavor(directory=directory, opt=opt.__dict__)
     project.set_version(version)
 
-    repo = load_git(directory, opt)
     write_git(repo, directory, version, opt)
 
     print("Version set to %s" % version)
@@ -274,13 +267,13 @@ def cli_show_version(directory, opt):
     """Show the current flavour specific version for a project."""
     if opt.build and opt.prebuild and not \
        (opt.prebuild_prefix or opt.prebuild_date):
-        AvakasError('Cannot specify build without prebuild')
+        raise AvakasError('Cannot specify build without prebuild')
 
     project = detect_project_flavor(directory=directory, opt=opt.__dict__)
     artifact_version = Version(project.get_version())
 
     if not artifact_version:
-        problems('Unable to extract current version')
+        raise AvakasError('Unable to extract current version')
 
     git_str = str(git_rev(directory))
     if opt.build:
@@ -294,7 +287,7 @@ def cli_show_version(directory, opt):
 def parse_args(parser):
     """Parse our command line arguments."""
 
-    BUMP_LEVELS = ['pre', 'patch', 'minor', 'major', 'auto']
+    bump_levels = ['pre', 'patch', 'minor', 'major', 'auto']
 
     parser = argparse.ArgumentParser(prog="avakas",
                                      description='Process some integers.')
@@ -317,20 +310,18 @@ def parse_args(parser):
     common.add_argument('--filename', dest='filename',
                         help='File name. Used for fallback versioning.',
                         default='version')
-
-    common.add_argument('--skip-dirty', dest='skipdirty',
-                        help='Skip checking if local repo is dirty',
-                        action='store_true',
-                        default=False)
-
-    common.add_argument('--skip-commit-changes', dest='commitchanges',
-                        help='Skip commiting generated version files',
-                        action='store_false',
-                        default=True)
     common.add_argument('directory', nargs=1,
                         help='Directory of the project', default='.')
 
     writable = argparse.ArgumentParser(add_help=False)
+    writable.add_argument('--skip-dirty', dest='skipdirty',
+                          help='Skip checking if local repo is dirty',
+                          action='store_true',
+                          default=False)
+    writable.add_argument('--skip-commit-changes', dest='commitchanges',
+                          help='Skip commiting generated version files',
+                          action='store_false',
+                          default=True)
     writable.add_argument('--with-hooks', dest='with_hooks',
                           help='Run git hooks', default=False)
     writable.add_argument('--dry-run',
@@ -343,7 +334,7 @@ def parse_args(parser):
                        help='Desired version to set')
 
     bump_p = subparsers.add_parser('bump', parents=[common, writable])
-    bump_p.add_argument('level', nargs=1, choices=BUMP_LEVELS,
+    bump_p.add_argument('level', nargs=1, choices=bump_levels,
                         help='Level to bump at', default='auto')
 
     show_p = subparsers.add_parser('show', parents=[common])
@@ -379,13 +370,17 @@ def main():
     directory = os.path.abspath(args.directory[0])
 
     if not os.path.exists(directory):
-        problems("Directory %s does not exist." % directory)
+        raise AvakasError("Directory %s does not exist." % directory)
 
-    if args.operation == 'bump':
-        cli_bump_version(directory, args)
-    elif args.operation == 'show':
-        cli_show_version(directory, args)
-    elif args.operation == 'set':
-        cli_set_version(directory, args)
+    try:
+        if args.operation == 'bump':
+            cli_bump_version(directory, args)
+        elif args.operation == 'show':
+            cli_show_version(directory, args)
+        elif args.operation == 'set':
+            cli_set_version(directory, args)
+    except AvakasError as err:
+        print("Problem: %s" % err.message, file=sys.stderr)
+        sys.exit(1)
 
     sys.exit(0)
