@@ -2,7 +2,6 @@
 Avakas classes and plugin handlers
 """
 
-import sys
 import os
 
 from semantic_version import Version
@@ -14,22 +13,27 @@ def detect_project_flavor(**kwargs):
     """
     Determines the project flavor for a given directory
     """
+    options = kwargs.get('opt', {})
+    flavor = options.get('flavor', 'auto')
 
-    matched = [f for n, f
-               in Avakas.project_flavors.items()
-               if f(**kwargs).guess_flavor()]
+    if flavor == 'auto':
+        matched = [f for n, f
+                   in Avakas.project_flavors.items()
+                   if f(**kwargs).guess_flavor()]
 
-    if len(matched) == 1:
-        project = matched[0](**kwargs)
-    elif len(matched) == 0:
-        project = Avakas.project_flavors['default'](**kwargs)
+        if len(matched) == 1:
+            return matched[0](**kwargs)
+        elif len(matched) == 0:
+            return Avakas.project_flavors['legacy'](**kwargs)
+        else:
+            matched_names = [f.PROJECT_TYPE for f in matched]
+            raise AvakasError("Multiple project flavor matches: %s" %
+                              ", ".join(matched_names))
     else:
-        matched_names = [f.PROJECT_TYPE for f in matched]
-        print("Multiple project flavor matches: %s" %
-              ", ".join(matched_names))
-        sys.exit(1)
-
-    return project
+        if flavor in Avakas.project_flavors:
+            return Avakas.project_flavors[flavor](**kwargs)
+        else:
+            raise AvakasError('Unable to find flavor "%s"' % flavor)
 
 
 class Avakas():

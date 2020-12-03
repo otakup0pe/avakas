@@ -11,12 +11,12 @@ from avakas.errors import AvakasError
 from avakas.avakas import Avakas, register_flavor
 
 
-@register_flavor('default')
+@register_flavor('legacy')
 class AvakasProject(Avakas):
     """
-    Default Avakas Project Flavor
+    Default Legacy Avakas Project Flavor
     """
-    PROJECT_TYPE = 'default'
+    PROJECT_TYPE = 'legacy'
 
     def __init__(self, **kwargs):
         super().__init__()

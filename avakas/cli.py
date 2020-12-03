@@ -310,6 +310,9 @@ def parse_args(parser):
     common.add_argument('--filename', dest='filename',
                         help='File name. Used for fallback versioning.',
                         default='version')
+    common.add_argument('--flavor', dest='flavor',
+                        help='Automation flavor for the project',
+                        default='legacy')
     common.add_argument('directory', nargs=1,
                         help='Directory of the project', default='.')
 
