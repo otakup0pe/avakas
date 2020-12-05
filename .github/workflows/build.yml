@@ -30,9 +30,9 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: .venv
-          key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.ock') }}
+          key: ${{ matrix.python-version }}-poetry-${{ hashFiles('**/poetry.ock') }}
           restore-keys: |
-            ${{ runner.os }}-poetry-
+            ${{ matrix.python-version }}-poetry-
       - name: "activate dependencies"
         run: "poetry install"
       - name: "run tests"
