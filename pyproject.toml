@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "avakas"
+version = "0.1.0"
+description = "Interact with project version metadata"
+authors = ["Jonathan Freedman <jonafree@gmail.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+semantic-version = "^2.8.5"
+GitPython = "^3.1.11"
+erl_terms = "^0.1.5"
+
+[tool.poetry.dev-dependencies]
+pycodestyle = "^2.6.0"
+pylint = "^2.6.0"
+nose = "^1.3.7"
+loremipsum = "^1.0.5"
+coverage = "^5.3"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
