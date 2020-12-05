@@ -142,7 +142,8 @@ def determine_bump(repo, opt):
     and look for hints that we want to "automatically" bump
     our version"""
     vsn = None
-    reg = re.compile(r'bump:(?P<bump>(patch|minor|major)).*', re.MULTILINE)
+    reg = re.compile(r'(\#|bump:|\[)(?P<bump>(patch|minor|major))(.*|\])',
+                     re.MULTILINE)
     for commit in repo.iter_commits(opt.branch):
         # we go iterate back to the last time we bumped the version
         if commit.message.startswith('Version bumped to'):
