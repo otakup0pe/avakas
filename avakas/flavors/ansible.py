@@ -22,7 +22,7 @@ class AvakasAnsibleProject(AvakasLegacy):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         tag_prefix = self.options.get('tag_prefix', '')
-        if tag_prefix != 'v' and tag_prefix != '':
+        if tag_prefix not in ['v', '']:
             raise AvakasError('Cannot specify a tag prefix '
                               'with an Ansible Role')
         self.options['tag_prefix'] = 'v'
@@ -32,8 +32,8 @@ class AvakasAnsibleProject(AvakasLegacy):
         return os.path.exists("%s/meta/main.yml" % directory)
 
     def read(self):
-        g = Git(self.directory)
-        out = g.tag(merged="HEAD", sort="-creatordate")
+        git = Git(self.directory)
+        out = git.tag(merged="HEAD", sort="-creatordate")
         tags = out.splitlines()
         tags = [t.strip(self.options['tag_prefix']) for t in tags]
         tags = sort_versions(tags)

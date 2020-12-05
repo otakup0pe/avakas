@@ -17,7 +17,7 @@ class AvakasNodeProject(AvakasLegacy):
     PROJECT_TYPE = 'node'
 
     @classmethod
-    def guess_flavor(self, directory):
+    def guess_flavor(cls, directory):
         return os.path.exists("%s/package.json" % directory)
 
     def __read_package_json(self):
@@ -38,14 +38,15 @@ class AvakasNodeProject(AvakasLegacy):
                   sort_keys=True)
         manifest_file.close()
 
-    def __extract_version(self, manifest_json):
+    @classmethod
+    def __extract_version(cls, manifest_json):
         return manifest_json['version']
 
     def read(self):
         manifest = self.__read_package_json()
         self.version = self.__extract_version(manifest)
 
-    def write(self, version):
+    def write(self):
         manifest = self.__read_package_json()
         manifest['version'] = self.version
         self.__write_package_json(manifest)

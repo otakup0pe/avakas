@@ -19,7 +19,7 @@ class AvakasErlangProject(AvakasLegacy):
     PROJECT_TYPE = 'erlang'
 
     @classmethod
-    def guess_flavor(self, directory):
+    def guess_flavor(cls, directory):
         return len(glob("%s/src/*.app.src" % directory)) == 1
 
     def read(self):

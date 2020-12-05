@@ -5,28 +5,12 @@ Avakas Built-In Base Project Flavor
 import os
 import re
 import sys
-import subprocess
-import contextlib
 
-from git import Repo, Git
+from git import Repo
 
 from avakas.errors import AvakasError
 from avakas.avakas import Avakas, register_flavor
-from avakas.utils import sort_versions
-
-
-@contextlib.contextmanager
-def stdout_redirect():
-    """ Forcefully redirect stdout to stderr """
-    # http://marc-abramowitz.com/archives/2013/07/19/python-context-manager-for-redirected-stdout-and-stderr/
-    try:
-        oldstdchannel = os.dup(sys.stdout.fileno())
-        os.dup2(sys.stderr.fileno(), sys.stdout.fileno())
-
-        yield
-    finally:
-        if oldstdchannel is not None:
-            os.dup2(oldstdchannel, sys.stdout.fileno())
+from avakas.utils import stdout_redirect
 
 
 @register_flavor('legacy')
@@ -43,11 +27,13 @@ class AvakasLegacy(Avakas):
         For example, current directory has a meta/version file,
         return a true value.
         """
-        # default should always return false
+        os.path.exists(directory)
+        # For legacy, this should _ALWAYS_ return False
         return False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.repo = None
         self.version_filename = kwargs['filename']
         self.commit_files = [self.version_filename]
 
@@ -93,7 +79,7 @@ class AvakasLegacy(Avakas):
         opt = self.options
 
         self.repo.index.add(self.commit_files)
-        skip_hooks = True if not opt['with_hooks'] else False
+        skip_hooks = not opt['with_hooks']
         self.repo.index.commit("Version bumped to %s" % self.version,
                                skip_hooks=skip_hooks)
 
@@ -130,17 +116,20 @@ class AvakasLegacy(Avakas):
         return vsn
 
     def check_if_dirty(self):
+        """Check if the repo is dirty"""
         self.repo = self.__load_git()
         if not self.options['skipdirty'] and self.repo.is_dirty():
             raise AvakasError("Git repo dirty.")
 
     def write_versionfile(self):
+        """Write the version file"""
         path = os.path.join(self.directory, self.version_filename)
         version_file = open(path, 'w')
         version_file.write("%s\n" % self.version)
         version_file.close()
 
     def write_git(self):
+        """Write data to git"""
         tag = None
 
         if not self.options['dry']:
@@ -186,42 +175,3 @@ class AvakasLegacy(Avakas):
         self.check_if_dirty()
         self.write_versionfile()
         self.write_git()
-
-
-# Note in use
-# @register_flavor('git')
-class AvakasGitProject(Avakas):
-    """
-    Version Control System Avakas Project
-    """
-    PROJECT_TYPE = 'git'
-
-    def __run_cmd(self, command, success=0):
-        result = subprocess.run(
-            command.split(' '),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            cwd=self.directory if self.directory is not None else None,
-            shell=False,
-            check=True,
-        )
-        output = result.stdout.decode().strip()
-        if result.returncode is not success:
-            raise AvakasError(
-                "The command '{}' returned code {}. Output:\n{}".format(
-                    command, result.returncode, output
-                )
-            )
-        return output
-
-    def read(self):
-        g = Git(self.directory)
-        out = g.tag(merged="HEAD", sort="-creatordate")
-        tags = out.splitlines()
-        tags = [t.strip(self.options['tag_prefix']) for t in tags]
-        tags = sort_versions(tags)
-        latest_tag = tags[-1]
-
-        self.version = latest_tag
-
-        return self.version

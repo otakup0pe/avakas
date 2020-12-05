@@ -68,11 +68,14 @@ class Avakas():
             raise AvakasError("Invalid version string %s" %
                               version) from err
 
-    def read(self):
+    @classmethod
+    def read(cls):
+        """Read version data from a project"""
         return True
 
-    def write(self):
-        pass
+    @classmethod
+    def write(cls):
+        """Write version data to a project"""
 
     def bump(self, bump=None):
         """Bump version"""

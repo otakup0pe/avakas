@@ -12,35 +12,11 @@ import os
 import sys
 from datetime import datetime
 import argparse
-import contextlib
 
 from git import Repo
 
 from .avakas import detect_project_flavor
 from .errors import AvakasError
-
-
-@contextlib.contextmanager
-def stdout_redirect():
-    """ Forcefully redirect stdout to stderr """
-    # http://marc-abramowitz.com/archives/2013/07/19/python-context-manager-for-redirected-stdout-and-stderr/
-    try:
-        oldstdchannel = os.dup(sys.stdout.fileno())
-        os.dup2(sys.stderr.fileno(), sys.stdout.fileno())
-
-        yield
-    finally:
-        if oldstdchannel is not None:
-            os.dup2(oldstdchannel, sys.stdout.fileno())
-
-
-def usage(parser=None):
-    """Display usage syntax."""
-    print("avakas show <directory>")
-    print("avakas bump <directory> [pre|patch|minor|major]")
-    print("avakas set <directory> <version>")
-    if parser:
-        parser.print_help()
 
 
 def get_repo(directory):
@@ -110,7 +86,7 @@ def cli_bump_version(**kwargs):
     bump = kwargs['level'][0]
 
     if not project.bump(bump=bump):
-        exit(0)
+        sys.exit(0)
     project = add_metadata(project, **kwargs)
     project.write()
 
