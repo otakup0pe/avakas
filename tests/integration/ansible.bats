@@ -17,22 +17,22 @@ teardown() {
 
 @test "show a ansible version" {
     avakas_wrapper show "$REPO"
-    scan_lines "0.0.1" "${lines[@]}"
+    scan_lines "v0.0.1" "${lines[@]}"
 }
 
 @test "set an ansible version" {
     avakas_wrapper set "$REPO" "0.0.2"
     scan_lines "Version set to 0.0.2" "${lines[@]}"
     avakas_wrapper show "$REPO"
-    scan_lines "0.0.2" "${lines[@]}"
+    scan_lines "v0.0.2" "${lines[@]}"
     [ -e "$REPO/version" ]
 }
 
 @test "bump an ansible version" {
     avakas_wrapper bump "$REPO" patch
-    scan_lines "Version updated from 0.0.1 to 0.0.2" "${lines[@]}"
+    scan_lines "Version updated from v0.0.1 to v0.0.2" "${lines[@]}"
     avakas_wrapper show "$REPO"
-    scan_lines "0.0.2" "${lines[@]}"
+    scan_lines "v0.0.2" "${lines[@]}"
     [ -e "$REPO/version" ]
 }
 

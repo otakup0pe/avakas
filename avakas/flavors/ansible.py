@@ -2,38 +2,43 @@
 Avakas Built-In Ansible Project Flavor
 """
 
-import sys
 import os
 
-from avakas.flavors.base import AvakasGitProject
+from git import Git
+
+from avakas.flavors.base import AvakasLegacy
 from avakas.avakas import register_flavor
+from avakas.errors import AvakasError
+from avakas.utils import sort_versions
 
 
 @register_flavor('ansible')
-class AvakasAnsibleProject(AvakasGitProject):
+class AvakasAnsibleProject(AvakasLegacy):
     """
     Ansible Avakas Project
     """
     PROJECT_TYPE = 'ansible'
 
     def __init__(self, **kwargs):
-        opt = kwargs.get('opt', {})
-        tag_prefix = opt.get('tag_prefix', 'v')
-        # Handle explicit None
-        tag_prefix = 'v' if tag_prefix is None else tag_prefix
-        if tag_prefix != 'v':
-            print('Problem: Cannot specify a tag prefix with an Ansible Role')
-            sys.exit(1)
         super().__init__(**kwargs)
+        tag_prefix = self.options.get('tag_prefix', '')
+        if tag_prefix != 'v' and tag_prefix != '':
+            raise AvakasError('Cannot specify a tag prefix '
+                              'with an Ansible Role')
+        self.options['tag_prefix'] = 'v'
 
-    def guess_flavor(self):
-        return os.path.exists("%s/meta/main.yml" % self.directory)
+    @classmethod
+    def guess_flavor(cls, directory):
+        return os.path.exists("%s/meta/main.yml" % directory)
 
-    def set_version(self, version):
-        # write to version file
-        path = os.path.join(self.directory, self.version_filename)
-        version_file = open(path, 'w')
-        version_file.write("v%s\n" % str(version))
-        version_file.close()
-        # set git tag
-        super().set_version(version)
+    def read(self):
+        g = Git(self.directory)
+        out = g.tag(merged="HEAD", sort="-creatordate")
+        tags = out.splitlines()
+        tags = [t.strip(self.options['tag_prefix']) for t in tags]
+        tags = sort_versions(tags)
+        latest_tag = tags[-1]
+
+        self.version = latest_tag
+
+        return self.version
