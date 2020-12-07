@@ -96,7 +96,8 @@ class AvakasLegacy(Avakas):
         our version"""
         self.repo = self.__load_git()
         vsn = None
-        reg = re.compile(r'bump:(?P<bump>(patch|minor|major)).*', re.MULTILINE)
+        reg = re.compile(r'(\#|bump:|\[)(?P<bump>(patch|minor|major))(.*|\])',
+                         re.MULTILINE)
         for commit in self.repo.iter_commits(self.options['branch']):
             # we go iterate back to the last time we bumped the version
             if commit.message.startswith('Version bumped to'):
