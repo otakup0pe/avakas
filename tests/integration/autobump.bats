@@ -16,7 +16,7 @@ teardown() {
     shared_teardown
 }
 
-@test "autobump a plain version - patch" {
+@test "autobump a plain version - bump:patch" {
     commit_message "$REPO" "some thing\nbump:patch"
     avakas_wrapper bump "$REPO" auto
     avakas_wrapper show "$REPO"
@@ -28,7 +28,7 @@ teardown() {
     avakas_wrapper show "$REPO"
     [ "$output" == "0.0.3" ]
 }
-@test "autobump a plain version - minor" {
+@test "autobump a plain version - bump:minor" {
     commit_message "$REPO" "some thing\nbump:minor"
     avakas_wrapper bump "$REPO" auto
     avakas_wrapper show "$REPO"
@@ -46,7 +46,7 @@ teardown() {
     avakas_wrapper show "$REPO"
     [ "$output" == "0.3.0" ]
 }
-@test "autobump a plain version - major" {
+@test "autobump a plain version - bump:major" {
     commit_message "$REPO" "some thing\nbump:major"
     avakas_wrapper bump "$REPO" auto
     avakas_wrapper show "$REPO"
@@ -60,6 +60,123 @@ teardown() {
     commit_message "$REPO" "some boring junk\nbump:patch"
     commit_message "$REPO" "slightly less boring junk\nbump:major"
     commit_message "$REPO" "some boring junk\nbump:minor"
+    commit_message "$REPO" "still here tho"
+    avakas_wrapper bump "$REPO" auto
+    avakas_wrapper show "$REPO"
+    [ "$output" == "3.0.0" ]
+}
+@test "autobump a plain version - #patch" {
+    commit_message "$REPO" "some thing\#patch"
+    avakas_wrapper bump "$REPO" auto
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.2" ]
+    commit_message "$REPO" "some boring junk"
+    commit_message "$REPO" "more boring junk"
+    commit_message "$REPO" "we who are dreamers\n#patch"
+    avakas_wrapper bump "$REPO" auto
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.3" ]
+}
+@test "autobump a plain version - #minor" {
+    commit_message "$REPO" "some thing\n#minor"
+    avakas_wrapper bump "$REPO" auto
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.1.0" ]
+    commit_message "$REPO" "some boring junk"
+    commit_message "$REPO" "more boring junk"
+    commit_message "$REPO" "we who are dreamers\n#minor"
+    avakas_wrapper bump "$REPO" auto
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.2.0" ]
+    commit_message "$REPO" "some boring junk\n#patch"
+    commit_message "$REPO" "slightly less boring junk\n#minor"
+    commit_message "$REPO" "still here tho"
+    avakas_wrapper bump "$REPO" auto
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.3.0" ]
+}
+@test "autobump a plain version - #major" {
+    commit_message "$REPO" "some thing\n#major"
+    avakas_wrapper bump "$REPO" auto
+    avakas_wrapper show "$REPO"
+    [ "$output" == "1.0.0" ]
+    commit_message "$REPO" "some boring junk"
+    commit_message "$REPO" "more boring junk"
+    commit_message "$REPO" "we who are dreamers\n#major"
+    avakas_wrapper bump "$REPO" auto
+    avakas_wrapper show "$REPO"
+    [ "$output" == "2.0.0" ]
+    commit_message "$REPO" "some boring junk\n#patch"
+    commit_message "$REPO" "slightly less boring junk\n#major"
+    commit_message "$REPO" "some boring junk\n#minor"
+    commit_message "$REPO" "still here tho"
+    avakas_wrapper bump "$REPO" auto
+    avakas_wrapper show "$REPO"
+    [ "$output" == "3.0.0" ]
+}
+@test "autobump a plain version - [patch]" {
+    commit_message "$REPO" "some thing\n[patch]"
+    avakas_wrapper bump "$REPO" auto
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.2" ]
+    commit_message "$REPO" "some boring junk"
+    commit_message "$REPO" "more boring junk"
+    commit_message "$REPO" "we who are dreamers\n[patch]"
+    avakas_wrapper bump "$REPO" auto
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.3" ]
+}
+@test "autobump a plain version - [minor]" {
+    commit_message "$REPO" "some thing\n[minor]"
+    avakas_wrapper bump "$REPO" auto
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.1.0" ]
+    commit_message "$REPO" "some boring junk"
+    commit_message "$REPO" "more boring junk"
+    commit_message "$REPO" "we who are dreamers\n[minor]"
+    avakas_wrapper bump "$REPO" auto
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.2.0" ]
+    commit_message "$REPO" "some boring junk\n[patch]"
+    commit_message "$REPO" "slightly less boring junk\n[minor]"
+    commit_message "$REPO" "still here tho"
+    avakas_wrapper bump "$REPO" auto
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.3.0" ]
+}
+@test "autobump a plain version - [major]" {
+    commit_message "$REPO" "some thing\n[major]"
+    avakas_wrapper bump "$REPO" auto
+    avakas_wrapper show "$REPO"
+    [ "$output" == "1.0.0" ]
+    commit_message "$REPO" "some boring junk"
+    commit_message "$REPO" "more boring junk"
+    commit_message "$REPO" "we who are dreamers\n[major]"
+    avakas_wrapper bump "$REPO" auto
+    avakas_wrapper show "$REPO"
+    [ "$output" == "2.0.0" ]
+    commit_message "$REPO" "some boring junk\n[patch]"
+    commit_message "$REPO" "slightly less boring junk\n[major]"
+    commit_message "$REPO" "some boring junk\n[minor]"
+    commit_message "$REPO" "still here tho"
+    avakas_wrapper bump "$REPO" auto
+    avakas_wrapper show "$REPO"
+    [ "$output" == "3.0.0" ]
+}
+@test "autobump a plain version - mixed" {
+    commit_message "$REPO" "some thing\n#major"
+    avakas_wrapper bump "$REPO" auto
+    avakas_wrapper show "$REPO"
+    [ "$output" == "1.0.0" ]
+    commit_message "$REPO" "some boring junk"
+    commit_message "$REPO" "more boring junk"
+    commit_message "$REPO" "we who are dreamers\n[major]"
+    avakas_wrapper bump "$REPO" auto
+    avakas_wrapper show "$REPO"
+    [ "$output" == "2.0.0" ]
+    commit_message "$REPO" "some boring junk\nbump:patch"
+    commit_message "$REPO" "slightly less boring junk\n[major]"
+    commit_message "$REPO" "some boring junk\n#minor"
     commit_message "$REPO" "still here tho"
     avakas_wrapper bump "$REPO" auto
     avakas_wrapper show "$REPO"
