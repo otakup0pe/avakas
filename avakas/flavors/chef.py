@@ -5,47 +5,55 @@ Avakas Built-In Chef Project Flavor
 import os
 import re
 
-from avakas.flavors.base import AvakasProject
+from avakas.flavors.base import AvakasLegacy
 from avakas.avakas import register_flavor
 from avakas.errors import AvakasError
 from avakas.utils import match_and_rewrite_lines
 
 
 @register_flavor('chef')
-class AvakasChefProject(AvakasProject):
+class AvakasChefProject(AvakasLegacy):
     """
     Chef Cookbook Avakas Project Flavor
     """
     PROJECT_TYPE = 'chef'
 
-    def guess_flavor(self):
-        return os.path.exists("%s/metadata.rb" % self.directory)
+    @classmethod
+    def guess_flavor(cls, directory):
+        return os.path.exists("%s/metadata.rb" % directory)
 
-    def get_version(self):
+    def __read_metadata_file(self):
+        handle = open("%s/metadata.rb" % self.directory, 'r')
+        data = handle.read()
+        return data, handle
+
+    def read(self):
         """Extract the version from Chef Cookbook metadata"""
-        metadata_handle = open("%s/metadata.rb" % self.directory, 'r')
-        metadata = metadata_handle.read()
-        metadata_handle.close()
+        data, handle = self.__read_metadata_file()
         pattern = r'^version.+["\'](?P<vsn>\d+\.\d+\.\d+)["\'].*'
-        vsn_match = re.compile(pattern, re.MULTILINE).search(metadata)
-        version = str(vsn_match.group('vsn'))
-        super().set_version(version)
-        return self.version
+        matcher = re.compile(pattern, re.MULTILINE)
+        vsn_match = matcher.search(data)
+        handle.close()
+        self.version = str(vsn_match.group('vsn'))
+        return True
 
-    def set_version(self, version):
+    def write(self):
         """Writes the version to metadata.rb"""
-        metadata_file = "%s/metadata.rb" % self.directory
-        metadata_handle = open(metadata_file, 'r')
+
+        self.check_if_dirty()
 
         pattern = r'^(version.+["\'])(\d+\.\d+\.\d+)(["\'].*)'
-        lines, updated = match_and_rewrite_lines(pattern, metadata_handle,
-                                                 version)
+        data, handle = self.__read_metadata_file()
+        rewritten, updated = match_and_rewrite_lines(pattern, data,
+                                                     str(self.version))
 
-        metadata_handle.close()
         if not updated:
             raise AvakasError('Unable to set version on metadata.rb')
 
-        metadata_handle = open(metadata_file, 'w')
-        metadata_handle.write(''.join(lines))
-        metadata_handle.close()
-        super().set_version(version)
+        handle = open("%s/metadata.rb" % self.directory, 'w')
+        handle.write(rewritten)
+        handle.close()
+
+        self.write_versionfile()
+
+        self.write_git()

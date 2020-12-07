@@ -9,122 +9,14 @@ For more information see https://github.com/otakup0pe/avakas
 from __future__ import print_function
 
 import os
-import re
 import sys
 from datetime import datetime
 import argparse
-import contextlib
-
-from semantic_version import Version
 
 from git import Repo
 
 from .avakas import detect_project_flavor
 from .errors import AvakasError
-
-
-@contextlib.contextmanager
-def stdout_redirect():
-    """ Forcefully redirect stdout to stderr """
-    # http://marc-abramowitz.com/archives/2013/07/19/python-context-manager-for-redirected-stdout-and-stderr/
-    try:
-        oldstdchannel = os.dup(sys.stdout.fileno())
-        os.dup2(sys.stderr.fileno(), sys.stdout.fileno())
-
-        yield
-    finally:
-        if oldstdchannel is not None:
-            os.dup2(oldstdchannel, sys.stdout.fileno())
-
-
-def usage(parser=None):
-    """Display usage syntax."""
-    print("avakas show <directory>")
-    print("avakas bump <directory> [pre|patch|minor|major]")
-    print("avakas set <directory> <version>")
-    if parser:
-        parser.print_help()
-
-
-def git_push(repo, opt, tag=None):
-    """Pushes the repository to our remote."""
-    if tag:
-        info = repo.remotes[opt.remote].push(tag)
-    else:
-        info = repo.remotes[opt.remote].push()
-    info = info[0]
-    if info.flags & 1024 or info.flags & 32 or info.flags & 16:
-        raise AvakasError("Unexpected git error: %s" % info.summary)
-
-
-def write_git(repo, directory, vsn_str, opt):
-    """Will commit and push the version file and optionally tags."""
-    if isinstance(vsn_str, str):
-        version = Version(vsn_str)
-    else:
-        version = vsn_str
-        vsn_str = str(version)
-
-    if opt.tag_prefix:
-        tag = "%s%s" % (opt.tag_prefix, vsn_str)
-    else:
-        tag = vsn_str
-
-    if opt.dry:
-        print("Would have pushed %s to %s." % (vsn_str, opt.remote),
-              file=sys.stderr)
-        if not version.build:
-            print("Would have tagged as %s." % tag,
-                  file=sys.stderr)
-
-        return
-
-    project = detect_project_flavor(directory=directory, opt=opt.__dict__)
-
-    if project.version_filename and opt.commitchanges:
-        repo.index.add([project.version_filename])
-        skip_hooks = True
-        if opt.with_hooks:
-            skip_hooks = False
-
-        repo.index.commit("Version bumped to %s" % vsn_str,
-                          skip_hooks=skip_hooks)
-        git_push(repo, opt)
-
-    if not version.build:
-        repo.create_tag(tag)
-        git_push(repo, opt, tag)
-
-
-def load_git(directory, opt):
-    """Initializes our local git workspace."""
-    repo = get_repo(directory)
-    if not repo:
-        raise AvakasError("Unable to find associated git repo for %s." %
-                          directory)
-
-    if not opt.skipdirty and repo.is_dirty():
-        raise AvakasError("Git repo dirty.")
-
-    if opt.branch not in repo.heads:
-        raise AvakasError("Branch %s branch not found." % opt.branch)
-
-    if repo.active_branch != repo.heads[opt.branch]:
-        print("Switching to %s branch" % opt.branch,
-              file=sys.stderr)
-        repo.heads[opt.branch].checkout()
-    else:
-        print("Already on %s branch" % opt.branch,
-              file=sys.stderr)
-
-    if opt.remote not in [r.name for r in repo.remotes]:
-        raise AvakasError("Remote %s not found" % opt.remote)
-
-    # we really do not want to be polluting our stdout when showing the version
-    with stdout_redirect():
-        repo.remotes[opt.remote].pull(refspec=opt.branch)
-
-    return repo
 
 
 def get_repo(directory):
@@ -137,96 +29,25 @@ def git_rev(directory):
     return str(get_repo(directory).head.commit)[0:8]
 
 
-def determine_bump(repo, opt):
-    """Will go through the Git history until the last version bump
-    and look for hints that we want to "automatically" bump
-    our version"""
-    vsn = None
-    reg = re.compile(r'(\#|bump:|\[)(?P<bump>(patch|minor|major))(.*|\])',
-                     re.MULTILINE)
-    for commit in repo.iter_commits(opt.branch):
-        # we go iterate back to the last time we bumped the version
-        if commit.message.startswith('Version bumped to'):
-            break
-
-        res = reg.search(commit.message)
-        if res:
-            bump = res.group('bump')
-            if not vsn:
-                vsn = bump
-            elif vsn == 'patch' and bump == 'minor':
-                vsn = 'minor'
-            elif vsn == 'patch' and bump == 'major':
-                vsn = 'major'
-            elif vsn == 'minor' and bump == 'major':
-                vsn = 'major'
-
-    return vsn
-
-
-def cli_bump_version(directory, opt):
-    """Bump the flavour specific version for a project."""
-    repo = load_git(directory, opt)
-    project = detect_project_flavor(directory=directory, opt=opt.__dict__)
-    artifact_version = project.get_version()
-
-    bump = opt.level[0]
-
-    if bump == 'auto':
-        bump = determine_bump(repo, opt)
-        if not bump:
-            if opt.default_bump:
-                bump = opt.default_bump
-            else:
-                # Exit safely since no bump was detected and desired
-                print("No auto bump indicators", file=sys.stderr)
-                sys.exit(0)
-
-    project.bump(bump)
-    project = add_metadata(project, directory, opt)
-    project.set_version(project.version)
-
-    new_version = str(project.version)
-    write_git(repo, directory, new_version, opt)
-
-    print("Version updated from %s to %s" % (artifact_version, new_version))
-
-
-def cli_set_version(directory, opt):
-    """Manually set the flavour specific version for a project."""
-    version = opt.version[0]
-    repo = load_git(directory, opt)
-    project = detect_project_flavor(directory=directory, opt=opt.__dict__)
-    try:
-        project.version = Version(version)
-    except ValueError as err:
-        raise AvakasError("Invalid version string %s" % version) from err
-
-    project = add_metadata(project, directory, opt)
-    project.set_version(project.version)
-
-    write_git(repo, directory, version, opt)
-
-    print("Version set to %s" % version)
-
-
-def add_metadata(project, directory, opt):
+def add_metadata(project, **kwargs):
     """
     Add metadata for set/bump actions
     """
+    directory = kwargs['directory'][0]
+
     git_str = str(git_rev(directory))
-    if opt.buildmeta and not project.version.build:
+    if kwargs['buildmeta']:
         metadata = (git_str,)
         metadata += ci_build_meta()
         project.apply_metadata(*metadata)
 
     now = None
-    if opt.prerelease_date:
+    if kwargs['prerelease_date']:
         time_fmt = "%Y%m%d%H%M%S"
         now = datetime.utcnow().strftime(time_fmt)
 
-    if opt.prerelease:
-        project.make_prerelease(prefix=opt.prerelease_prefix,
+    if kwargs['prerelease']:
+        project.make_prerelease(prefix=kwargs['prerelease_prefix'],
                                 build_date=now)
     return project
 
@@ -246,15 +67,43 @@ def ci_build_meta():
     return meta
 
 
-def cli_show_version(directory, opt):
+def cli_show_version(**kwargs):
     """Show the current flavour specific version for a project."""
-    project = detect_project_flavor(directory=directory, opt=opt.__dict__)
-    artifact_version = project.get_version()
-
-    if not artifact_version:
+    project = detect_project_flavor(**kwargs)
+    if not project.read():
         raise AvakasError('Unable to extract current version')
 
     print("%s" % str(project.version))
+
+
+def cli_bump_version(**kwargs):
+    """Bump the flavour specific version for a project."""
+    project = detect_project_flavor(**kwargs)
+    if not project.read():
+        raise AvakasError('Unable to extract current version')
+    old_version = project.version
+
+    bump = kwargs['level'][0]
+
+    if not project.bump(bump=bump):
+        sys.exit(0)
+    project = add_metadata(project, **kwargs)
+    project.write()
+
+    print("Version updated from %s to %s" %
+          (old_version, str(project.version)))
+
+
+def cli_set_version(**kwargs):
+    """Manually set the flavour specific version for a project."""
+    version = kwargs['version'][0]
+    project = detect_project_flavor(**kwargs)
+
+    project.version = version
+    project = add_metadata(project, **kwargs)
+    project.write()
+
+    print("Version set to %s" % version)
 
 
 def parse_args(parser):
@@ -270,7 +119,7 @@ def parse_args(parser):
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument('--tag-prefix', dest='tag_prefix',
                         help='Prefix for version tag name',
-                        default=None)
+                        default='')
 
     common.add_argument('--branch', dest='branch',
                         help='Branch to use when updating git',
@@ -287,7 +136,7 @@ def parse_args(parser):
                         help='Automation flavor for the project',
                         default='auto')
     common.add_argument('directory', nargs=1,
-                        help='Directory of the project', default='.')
+                        help='Directory of the project', default=os.getcwd())
 
     writable = argparse.ArgumentParser(add_help=False)
     writable.add_argument('--build-meta', dest='buildmeta',
@@ -353,11 +202,11 @@ def main():
 
     try:
         if args.operation == 'bump':
-            cli_bump_version(directory, args)
+            cli_bump_version(**vars(args))
         elif args.operation == 'show':
-            cli_show_version(directory, args)
+            cli_show_version(**vars(args))
         elif args.operation == 'set':
-            cli_set_version(directory, args)
+            cli_set_version(**vars(args))
     except AvakasError as err:
         print("Problem: %s" % err.message, file=sys.stderr)
         sys.exit(1)
