@@ -2,8 +2,6 @@
 Avakas classes and plugin handlers
 """
 
-import os
-
 from semantic_version import Version
 
 from .errors import AvakasError
@@ -13,29 +11,29 @@ def detect_project_flavor(**kwargs):
     """
     Determines the project flavor for a given directory
     """
+
     options = kwargs.get('opt', {})
     flavor = options.get('flavor', 'auto')
 
     if flavor == 'auto':
         matched = [f for n, f
                    in Avakas.project_flavors.items()
-                   if f(**kwargs).guess_flavor()]
-
+                   if f.guess_flavor(directory=kwargs['directory'][0])]
         if len(matched) == 1:
-            project = matched[0](**kwargs)
+            project = matched[0]
         elif len(matched) == 0:
-            project = Avakas.project_flavors['legacy'](**kwargs)
+            project = Avakas.project_flavors['legacy']
         else:
             matched_names = [f.PROJECT_TYPE for f in matched]
             raise AvakasError("Multiple project flavor matches: %s" %
                               ", ".join(matched_names))
     else:
         if flavor in Avakas.project_flavors:
-            project = Avakas.project_flavors[flavor](**kwargs)
+            project = Avakas.project_flavors[flavor]
         else:
             raise AvakasError('Unable to find flavor "%s"' % flavor)
 
-    return project
+    return project(**kwargs)
 
 
 class Avakas():
@@ -45,37 +43,61 @@ class Avakas():
     project_flavors = {}
 
     def __init__(self, **kwargs):
-        self.version = Version('0.0.0')
-        self.directory = kwargs.get('directory', os.getcwd())
+        self._version = Version('0.0.0')
+        self.directory = kwargs['directory'][0]
+        self.options = kwargs
 
-    def get_version(self):
+    @property
+    def version(self):
         """Get version"""
-        return str(self.version)
+        tag_prefix = self.options.get('tag_prefix', '')
+        return "%s%s" % (tag_prefix, self._version)
 
-    def set_version(self, version):
+    @version.setter
+    def version(self, version):
         """Set version"""
-        if isinstance(version, str):
-            self.version = Version(version)
-        else:
-            self.version = version
+        if not isinstance(version, str):
+            raise TypeError("version must be type of str")
 
-    def bump(self, bump):
+        tag_prefix = self.options.get('tag_prefix', None)
+        version = version.strip(tag_prefix)
+
+        try:
+            self._version = Version(version)
+        except ValueError as err:
+            raise AvakasError("Invalid version string %s" %
+                              version) from err
+
+    @classmethod
+    def read(cls):
+        """Read version data from a project"""
+        return True
+
+    @classmethod
+    def write(cls):
+        """Write version data to a project"""
+
+    def bump(self, bump=None):
         """Bump version"""
-        old_version = self.version
+        if not bump:
+            return False
+
         if bump == 'patch':
-            self.version = old_version.next_patch()
+            self._version = self._version.next_patch()
         elif bump == 'minor':
-            self.version = old_version.next_minor()
+            self._version = self._version.next_minor()
         elif bump == 'major':
-            self.version = old_version.next_major()
+            self._version = self._version.next_major()
         else:
             raise AvakasError("Invalid version component")
+
+        return True
 
     def make_prerelease(self, prefix=None, build_date=None):
         """Make current version a prerelease"""
         release_pos = 1 if prefix else 0
-        if self.version.prerelease:
-            release = self.version.prerelease[release_pos]
+        if self._version.prerelease:
+            release = self._version.prerelease[release_pos]
         else:
             release = 1
 
@@ -85,17 +107,17 @@ class Avakas():
 
     def apply_metadata(self, *metadata):
         """Apply build metadata to project version"""
-        self.version.build += metadata
+        self._version.build += metadata
 
     def apply_prerelease(self, *prebuild, prefix=None, build_date=None):
         """Apply prebuild data to project version"""
         if prefix:
-            self.version.prerelease += (prefix,)
+            self._version.prerelease = (prefix,)
 
-        self.version.prerelease += prebuild
+        self._version.prerelease += prebuild
 
         if build_date:
-            self.version.prerelease += (build_date,)
+            self._version.prerelease += (build_date,)
 
 
 def register_flavor(flavor):
