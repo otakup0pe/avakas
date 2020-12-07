@@ -56,7 +56,7 @@ jobs:
         with:
           python-version: "3.8"
       - name: "dat env tho"
-        run: "make testenv"
+        run: "make deps"
       - name: "Maybe bump version"
         run: |
             git config user.email "sysop@eghetto.ca"
