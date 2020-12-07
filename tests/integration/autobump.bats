@@ -230,3 +230,17 @@ teardown() {
     avakas_wrapper show "$REPO"
     [ "$output" == "1.1.0" ]
 }
+@test "autobump with no commit" {
+    local rev=$(git rev-parse --verify HEAD | cut -c 1-7)
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.1" ]
+    avakas_wrapper bump "$REPO" auto --default-bump patch --skip-commit-changes --skip-dirty
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.2" ]
+    # check that there is no commit
+    local logs=($(git log --pretty=format:"%h %s"))
+    [ "$rev" == "$logs" ]
+    # check that we have a new tag
+    local tags=($(git tag -l))
+    [ "${tags[-1]}" == "0.0.2" ]
+}

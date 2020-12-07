@@ -195,6 +195,10 @@ def main():
     parser = argparse.ArgumentParser(prog="avakas")
     args = parse_args(parser)
 
+    if args.operation is None:
+        parser.print_help()
+        exit(0)
+
     directory = os.path.abspath(args.directory[0])
 
     if not os.path.exists(directory):
@@ -207,6 +211,8 @@ def main():
             cli_show_version(**vars(args))
         elif args.operation == 'set':
             cli_set_version(**vars(args))
+        else:
+            parser.print_help()
     except AvakasError as err:
         print("Problem: %s" % err.message, file=sys.stderr)
         sys.exit(1)
