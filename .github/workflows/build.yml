@@ -34,7 +34,7 @@ jobs:
           restore-keys: |
             ${{ matrix.python-version }}-poetry-
       - name: "activate dependencies"
-        run: "poetry install"
+        run: "pip install --upgrade poetry"
       - name: "run tests"
         run: "poetry run make test"
       - name: "build container"
