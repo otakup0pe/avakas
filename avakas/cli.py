@@ -197,7 +197,7 @@ def main():
 
     if args.operation is None:
         parser.print_help()
-        exit(0)
+        sys.exit(0)
 
     directory = os.path.abspath(args.directory[0])
 
