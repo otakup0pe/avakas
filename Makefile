@@ -4,7 +4,8 @@ deps:
 	poetry install
 
 package:
-	python setup.py sdist
+	test -f version || poetry version $(cat version)
+	test -f version || poetry build
 
 test:
 	coverage erase
@@ -15,7 +16,7 @@ test:
 	test -z $(TRAVIS) && coverage erase || true
 
 install:
-	python setup.py install
+	poetry install
 
 clean:
 	rm -rf .bats-git .bats .ci-env avakas.egg-info dist build .coverage
