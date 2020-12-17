@@ -1,2 +1,2 @@
 [MESSAGES CONTROL]
-disable=W0402
+disable=W0402,R0801
