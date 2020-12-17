@@ -12,8 +12,7 @@ def detect_project_flavor(**kwargs):
     Determines the project flavor for a given directory
     """
 
-    options = kwargs.get('opt', {})
-    flavor = options.get('flavor', 'auto')
+    flavor = kwargs.get('flavor', 'auto')
 
     if flavor == 'auto':
         matched = [f for n, f
