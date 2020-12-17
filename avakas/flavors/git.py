@@ -26,6 +26,7 @@ class AvakasGitNative(Avakas):
         Always return false as this is an explicitly called
         flavor.
         """
+        # pylint: disable=unused-argument
         return False
 
     def __init__(self, **kwargs):

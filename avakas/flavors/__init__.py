@@ -13,7 +13,7 @@ __all__ = [
     'AvakasAnsibleProject',
     'AvakasChefProject',
     'AvakasErlangProject',
-    'AvakasGitNative,'
+    'AvakasGitNative',
     'AvakasLegacy',
     'AvakasNodeProject',
 ]
