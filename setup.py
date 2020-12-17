@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import sys
 import os
+import subprocess
+from avakas.avakas import detect_project_flavor
 
 
 try:
@@ -11,14 +13,23 @@ except ImportError:
 
 
 def main():
-    vsn_path = "%s/version" % os.path.dirname(os.path.abspath(__file__))
-    if not os.path.exists(vsn_path):
-        print("%s is missing" % vsn_path)
-        sys.exit(1)
-
-    vsn_file = open(vsn_path, 'r')
-    version = vsn_file.read()
-    vsn_file.close()
+    try:
+        resp = subprocess.run(['git', 'branch', '--show-current'],
+                              capture_output=True,
+                              encoding='UTF-8')
+        current_branch = str(resp.stdout.strip())
+        subprocess.call(['git', 'branch', '--show-current'])
+        project = detect_project_flavor(flavor='git-native',
+                                        directory=[os.getcwd()],
+                                        filename='version',
+                                        branch=current_branch,
+                                        tag_prefix="")
+        project.read()
+        version = project.version
+    except Exception:
+        version = '0.0.0'
+        print('Avakas was unable to determine version. Using %s' % version,
+              file=sys.stderr)
 
     setup(name='avakas',
           version=version,
