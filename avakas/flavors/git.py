@@ -36,17 +36,10 @@ class AvakasGitNative(Avakas):
 
     def __load_git(self):
         """Initializes our local git workspace."""
-        opt = self.options
         repo = Repo(self.directory, search_parent_directories=True)
         if not repo:
             raise AvakasError("Unable to find associated git repo for %s." %
                               self.directory)
-
-        if opt['branch'] not in repo.heads:
-            raise AvakasError("Branch %s branch not found." % opt['branch'])
-
-        if repo.active_branch != repo.heads[opt['branch']]:
-            raise AvakasError("Current branch is not desired branch.")
 
         return repo
 

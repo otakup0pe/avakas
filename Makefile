@@ -11,6 +11,7 @@ testenv:
 		(echo "Within CI" && pip install -r requirements.txt -r requirements-dev.txt)
 
 install:
+	python -m avakas show . --flavor "git-native"
 	python setup.py install
 
 package:
