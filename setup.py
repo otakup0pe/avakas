@@ -14,15 +14,10 @@ except ImportError:
 
 def main():
     try:
-        resp = subprocess.run(['git', 'branch', '--show-current'],
-                              capture_output=True,
-                              encoding='UTF-8')
-        current_branch = str(resp.stdout.strip())
         subprocess.call(['git', 'branch', '--show-current'])
         project = detect_project_flavor(flavor='git-native',
                                         directory=[os.getcwd()],
                                         filename='version',
-                                        branch=current_branch,
                                         tag_prefix="")
         project.read()
         version = project.version
