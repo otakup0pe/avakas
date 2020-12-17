@@ -7,3 +7,4 @@ avakas.egg-info
 .bats*
 .ci-env
 .coverage
+version
