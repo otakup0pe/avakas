@@ -26,7 +26,7 @@ teardown() {
     scan_lines "Version set to 0.0.2" "${lines[@]}"
     avakas_wrapper show "$REPO"
     scan_lines "0.0.2" "${lines[@]}"
-    [ ! -e "$REPO/version" ]
+    [ -e "$REPO/version" ]
 }
 
 @test "bump an git-native version" {
