@@ -168,3 +168,12 @@ teardown() {
     unset GITHUB_RUN_ID
     unset GITHUB_RUN_NUMBER
 }
+
+@test "increment prerelease multiple times w/ prefix" {
+    avakas_wrapper bump "$REPO" patch --prerelease --prerelease-prefix beta
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.1-beta.1" ]
+    avakas_wrapper bump "$REPO" patch --prerelease --prerelease-prefix beta
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.1-beta.2" ]
+}
