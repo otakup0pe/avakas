@@ -19,7 +19,7 @@ if [ ! -d "$BATSBIN" ] ; then
     ./install.sh "$BATSBIN"
 fi
 
-if [ -z "$CI" ] ; then
+if [ -z "$CI" ]  && [ -z "$VIRTUAL_ENV" ]; then
     . "${ROOTDIR}/.ci-env/bin/activate"
 fi
 
