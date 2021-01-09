@@ -1,6 +1,10 @@
 .PHONY = all testenv install package test test_in_containers test_in_container_37 test_in_container_38 clean container
 
 HERE := $(shell pwd)
+HERE_OWNERSHIP := $(shell stat -c '%u:%g' $(HERE))
+FIX_OWNERSHIP := chown -R $(HERE_OWNERSHIP)
+
+SETUP_CONTAINER_FOR_TESTS := pip install tox; cd /src;make clean;pip install -r requirements.txt
 
 ifndef CI
 	CI_ENV=$(HERE)/.ci-env/bin/
@@ -34,10 +38,10 @@ generate_testing_artifact: clean
 	tox --sdistonly
 
 test_in_container_37: #generate_testing_artifact
-	docker run -v "$(HERE):/src" python:3.7 bash -c 'pip install tox; cd /src;tox -e py37'
+	docker run -v "$(HERE):/src" python:3.7 bash -c '$(SETUP_CONTAINER_FOR_TESTS); tox -e py37;$(FIX_OWNERSHIP) /src'
 
 test_in_container_38: generate_testing_artifact
-	docker run -v "$(HERE):/src" python:3.8 bash -c 'pip install tox; cd /src;tox -e py38'
+	docker run -v "$(HERE):/src" python:3.8 bash -c '$(SETUP_CONTAINER_FOR_TESTS);tox -e py38;$(FIX_OWNERSHIP) /src'
 
 
 # Long term these versions should not be hardcoded, upon
