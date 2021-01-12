@@ -37,7 +37,7 @@ test: testenv install
 generate_testing_artifact: clean
 	tox --sdistonly
 
-test_in_container_37: #generate_testing_artifact
+test_in_container_37: generate_testing_artifact
 	docker run -v "$(HERE):/src" python:3.7 bash -c '$(SETUP_CONTAINER_FOR_TESTS); tox -e py37;$(FIX_OWNERSHIP) /src'
 
 test_in_container_38: generate_testing_artifact
