@@ -9,3 +9,5 @@ avakas.egg-info
 .coverage
 version
 .tox
+.local
+.cache
