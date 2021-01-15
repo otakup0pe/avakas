@@ -4,7 +4,7 @@ HERE := $(shell pwd)
 HERE_OWNERSHIP := $(shell stat -c '%u:%g' $(HERE))
 FIX_OWNERSHIP := chown -R $(HERE_OWNERSHIP)
 
-SETUP_CONTAINER_FOR_TESTS := pip install tox; cd /src;pip install -r requirements.txt
+SETUP_CONTAINER_FOR_TESTS := cd /src;pip install -r requirements.txt
 
 ifndef CI
 	CI_ENV=$(HERE)/.ci-env/bin/
