@@ -29,14 +29,14 @@ def git_rev(directory):
     return str(get_repo(directory).head.commit)[0:8]
 
 
-def add_metadata(project, **kwargs):
+def add_metadata(project, buildmeta=False, **kwargs):
     """
     Add metadata for set/bump actions
     """
     directory = kwargs['directory'][0]
 
     git_str = str(git_rev(directory))
-    if kwargs['buildmeta']:
+    if buildmeta:
         metadata = (git_str,)
         metadata += ci_build_meta()
         project.apply_metadata(*metadata)
