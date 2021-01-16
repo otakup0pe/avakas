@@ -109,7 +109,9 @@ class Avakas():
                                   prefix=prerelease_prefix,
                                   build_date=build_date)
 
-        assert self._version != original
+        if self._version == original:
+            msg = "Attempted to set the version to its previous value!"
+            raise AvakasError(msg)
 
         return True
 
