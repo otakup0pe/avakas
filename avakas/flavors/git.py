@@ -68,9 +68,10 @@ class AvakasGitNative(Avakas):
         vsn = None
         reg = re.compile(r'(\#|bump:|\[)(?P<bump>(patch|minor|major))(.*|\])',
                          re.MULTILINE)
+        tagged_commits = set(tag.commit for tag in self.repo.tags)
         for commit in self.repo.iter_commits(self.options['branch']):
             # we go iterate back to the last time we bumped the version
-            if commit.message.startswith('Version bumped to'):
+            if commit in tagged_commits:
                 break
 
             res = reg.search(commit.message)
