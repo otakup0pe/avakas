@@ -8,9 +8,9 @@ For more information see https://github.com/otakup0pe/avakas
 
 from __future__ import print_function
 
+import datetime
 import os
 import sys
-from datetime import datetime
 import argparse
 
 from git import Repo
@@ -41,14 +41,6 @@ def add_metadata(project, buildmeta=False, **kwargs):
         metadata += ci_build_meta()
         project.apply_metadata(*metadata)
 
-    now = None
-    if kwargs['prerelease_date']:
-        time_fmt = "%Y%m%d%H%M%S"
-        now = datetime.utcnow().strftime(time_fmt)
-
-    if kwargs['prerelease']:
-        project.make_prerelease(prefix=kwargs['prerelease_prefix'],
-                                build_date=now)
     return project
 
 
@@ -76,7 +68,7 @@ def cli_show_version(**kwargs):
     print("%s" % str(project.version))
 
 
-def cli_bump_version(**kwargs):
+def cli_bump_version(prerelease_date=False, **kwargs):
     """Bump the flavour specific version for a project."""
     project = detect_project_flavor(**kwargs)
     if not project.read():
@@ -85,7 +77,15 @@ def cli_bump_version(**kwargs):
 
     bump = kwargs['level'][0]
 
-    if not project.bump(bump=bump):
+    if prerelease_date is True:
+        time_fmt = "%Y%m%d%H%M%S"
+        prerelease_date = datetime.datetime.utcnow().strftime(time_fmt)
+
+    if not project.bump(
+            bump=bump,
+            prerelease=kwargs['prerelease'],
+            prerelease_prefix=kwargs['prerelease_prefix'],
+            build_date=prerelease_date):
         sys.exit(0)
     project = add_metadata(project, **kwargs)
     project.write()
