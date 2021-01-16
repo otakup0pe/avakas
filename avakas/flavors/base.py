@@ -124,6 +124,7 @@ class AvakasLegacy(Avakas):
 
     def write_versionfile(self):
         """Write the version file"""
+
         path = os.path.join(self.directory, self.version_filename)
         version_file = open(path, 'w')
         version_file.write("%s\n" % self.version)

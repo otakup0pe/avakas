@@ -49,6 +49,7 @@ class Avakas():
     @property
     def version(self):
         """Get version"""
+
         tag_prefix = self.options.get('tag_prefix', '')
         return "%s%s" % (tag_prefix, self._version)
 
