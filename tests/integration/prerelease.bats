@@ -188,8 +188,8 @@ teardown() {
     [ "$output" == "0.0.1-beta.2" ]
     avakas_wrapper bump "$REPO" patch --prerelease --prerelease-prefix beta
     avakas_wrapper show "$REPO"
-    [ "$output" == "0.0.1-beta.3"]
+    [ "$output" == "0.0.1-beta.3" ]
     avakas_wrapper bump "$REPO" patch --prerelease --prerelease-prefix rc
     avakas_wrapper show "$REPO"
-    [ "$output" == "0.0.1-rc.1"]
+    [ "$output" == "0.0.1-rc.1" ]
 }
