@@ -2,6 +2,9 @@
 Avakas classes and plugin handlers
 """
 
+import copy
+import datetime
+
 from semantic_version import Version
 
 from .errors import AvakasError
@@ -68,6 +71,18 @@ class Avakas():
             raise AvakasError("Invalid version string %s" %
                               version) from err
 
+    @property
+    def version_obj(self):
+        """
+        Get a copy (not the original) of the `semantic_version.Version object
+        which this instance uses to internally manage its version
+
+        Returns:
+            * `semantic_version.Version` : A copy of `self._version`
+        """
+
+        return copy.deepcopy(self._version)
+
     @classmethod
     def read(cls):
         """Read version data from a project"""
@@ -101,13 +116,14 @@ class Avakas():
         self._version = bump_method()
 
         if prerelease:
-            prerelease_version = self._get_prerelease_version(
+            prerelease_version = self.get_next_prerelease_version(
                 original, prefix=prerelease_prefix
             )
 
-            self.apply_prerelease(prerelease_version,
-                                  prefix=prerelease_prefix,
-                                  build_date=build_date)
+            self.make_prerelease(
+                prerelease_version,
+                prefix=prerelease_prefix,
+                build_date=build_date)
 
         if self._version == original:
             msg = "Attempted to set the version to its previous value!"
@@ -115,12 +131,19 @@ class Avakas():
 
         return True
 
-    def _get_prerelease_version(self, starting_version, prefix,
-                                new_version=None):
+    def get_next_prerelease_version(
+            self, starting_version=None, prefix=None,
+            new_version=None):
         """
         Return an integer representing the version of a given prerelase label
-        (i.e. alpha, beta, rc) which comes next
+        (i.e. alpha, beta, rc) which comes next.
+
+        if `starting_version` is not passed in, this will use `self`'s
+        version object as the starting version.
         """
+
+        if starting_version is None:
+            starting_version = self._version
 
         if new_version is None:
             new_version = self._version
@@ -167,18 +190,30 @@ class Avakas():
 
         return prerelease_version
 
-    def make_prerelease(self, prefix=None, build_date=None):
-        """Make current version a prerelease"""
+    def make_prerelease(self, version, prefix=None, build_date=None):
+        """
+        Make current version a prerelease
 
-        release_pos = 1 if prefix else 0
-        if self._version.prerelease:
-            release = self._version.prerelease[release_pos]
-        else:
-            release = 1
+        Args:
+            * version (`int` or `str`(digits only)): The numeric prerelease
+                version. i.e., for -dev.3, this is `3` or `"3"`.
+            * prefix (`str`, optional): the alphabetic (not enforced) prebuild
+                prefix, such as `a`, `beta`, `dev`, and such.
+            * build_date
+        """
 
-        self.apply_prerelease((str(release)),
+        prerelease_date = None
+        time_fmt = "%Y%m%d%H%M%S"
+
+        if build_date is True:
+            prerelease_date = datetime.datetime.utcnow().strftime(time_fmt)
+
+        elif build_date:
+            prerelease_date = build_date.strftime(time_fmt)
+
+        self.apply_prerelease((str(version)),
                               prefix=prefix,
-                              build_date=build_date)
+                              build_date=prerelease_date)
 
     def apply_metadata(self, *metadata):
         """Apply build metadata to project version"""

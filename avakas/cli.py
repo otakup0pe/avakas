@@ -68,22 +68,19 @@ def cli_show_version(**kwargs):
     print("%s" % str(project.version))
 
 
-def cli_bump_version(prerelease_date=False, **kwargs):
+def cli_bump_version(
+        level=None,
+        prerelease=False,
+        prerelease_date=False, **kwargs):
     """Bump the flavour specific version for a project."""
     project = detect_project_flavor(**kwargs)
     if not project.read():
         raise AvakasError('Unable to extract current version')
     old_version = project.version
 
-    bump = kwargs['level'][0]
-
-    if prerelease_date is True:
-        time_fmt = "%Y%m%d%H%M%S"
-        prerelease_date = datetime.datetime.utcnow().strftime(time_fmt)
-
     if not project.bump(
-            bump=bump,
-            prerelease=kwargs['prerelease'],
+            bump=level[0],
+            prerelease=prerelease,
             prerelease_prefix=kwargs['prerelease_prefix'],
             build_date=prerelease_date):
         sys.exit(0)
@@ -94,12 +91,24 @@ def cli_bump_version(prerelease_date=False, **kwargs):
           (old_version, str(project.version)))
 
 
-def cli_set_version(**kwargs):
+def cli_set_version(prerelease=False,
+                    prerelease_date=False,
+                    prerelease_prefix=None,
+                    **kwargs):
     """Manually set the flavour specific version for a project."""
+
     version = kwargs['version'][0]
     project = detect_project_flavor(**kwargs)
+    original_version = project.version_obj
 
     project.version = version
+    if prerelease:
+        prerelease_version = project.get_next_prerelease_version(
+            starting_version=original_version,
+            prefix=prerelease_prefix,
+            new_version=project.version_obj
+        )
+        project.make_prerelease(prerelease_version, build_date=prerelease_date)
     project = add_metadata(project, **kwargs)
     project.write()
 
