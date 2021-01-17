@@ -67,7 +67,7 @@ def ci_build_meta():
     return meta
 
 
-def cli_show_version(**kwargs):
+def cli_show_version(**_kwargs):
     """Show the current flavour specific version for a project."""
 
     # Throw a wrench in the works
