@@ -66,11 +66,21 @@ teardown() {
     unset GITHUB_RUN_NUMBER
 }
 
-@test "set a prerelease w/date" {
+@test "bump a prerelease w/date" {
     avakas_wrapper bump "$REPO" patch --prerelease --prerelease-date
     ALMOST="$(TZ='UTC' date "+%Y%m%d%H%M")"
     MATCH="$(rev <<< "$output" | cut -c 3- | rev)"
     grep -v "0.0.1\-1.${ALMOST}[0-9]{2}" <<< "$output"
+}
+
+@test "set a prerelease w/date" {
+    avakas_wrapper set "$REPO" 1.2.3 --prerelease --prerelease-date
+    ALMOST="$(TZ='UTC' date "+%Y%m%d%H%M")"
+    avakas_wrapper show "$REPO"
+
+    # Will only show on errors
+    echo "'${output}' does not match the expected '^1.2.3\-1.${ALMOST}[0-9]{2}'"
+    [[ "$output" =~ "^1.2.3\-1.${ALMOST}[0-9]{2}" ]]    
 }
 
 @test "set a prerelease w/date and git build" {
