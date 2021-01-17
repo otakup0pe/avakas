@@ -69,15 +69,16 @@ def ci_build_meta():
 
 def cli_show_version(**kwargs):
     """Show the current flavour specific version for a project."""
-    project = detect_project_flavor(**kwargs)
-    if not project.read():
-        raise AvakasError('Unable to extract current version')
 
-    print("%s" % str(project.version))
+    # Throw a wrench in the works
+    print('foo')
 
 
 def cli_bump_version(**kwargs):
     """Bump the flavour specific version for a project."""
+    print('foo')
+    sys.exit(0)
+
     project = detect_project_flavor(**kwargs)
     if not project.read():
         raise AvakasError('Unable to extract current version')
@@ -96,6 +97,9 @@ def cli_bump_version(**kwargs):
 
 def cli_set_version(**kwargs):
     """Manually set the flavour specific version for a project."""
+
+    print('foo')
+    sys.exit(0)
     version = kwargs['version'][0]
     project = detect_project_flavor(**kwargs)
 
