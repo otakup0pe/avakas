@@ -8,7 +8,6 @@ For more information see https://github.com/otakup0pe/avakas
 
 from __future__ import print_function
 
-import datetime
 import os
 import sys
 import argparse
