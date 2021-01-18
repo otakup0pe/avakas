@@ -79,8 +79,8 @@ teardown() {
     avakas_wrapper show "$REPO"
 
     # Will only show on errors
-    echo "'${output}' does not match the expected '^1.2.3\-1.${ALMOST}[0-9]{2}'"
-    [[ "$output" =~ "^1.2.3\-1.${ALMOST}[0-9]{2}" ]]    
+    echo "'${output}' does not match the expected '^1.2.3\-1.${ALMOST}[0-9]{2}$'"
+    [[ "$output" =~ ^1.2.3\-1.${ALMOST}[0-9]{2}$ ]]    
 }
 
 @test "set a prerelease w/date and git build" {
