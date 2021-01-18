@@ -69,8 +69,9 @@ teardown() {
 @test "bump a prerelease w/date" {
     avakas_wrapper bump "$REPO" patch --prerelease --prerelease-date
     ALMOST="$(TZ='UTC' date "+%Y%m%d%H%M")"
+    
     # Verify the 'bump' output
-    #[[ "$output" =~ ^Version.*updated.*0\.0\.0.*0\.0\.1-1\.${ALMOST} ]]
+    [[ "$output" =~ ^Version.*updated.*0\.0\.0.*0\.0\.1-1\.${ALMOST} ]]
     
     # Verify the set version
     avakas_wrapper show "$REPO"
