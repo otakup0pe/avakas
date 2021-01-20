@@ -105,15 +105,13 @@ class Avakas():
             return False
 
         if bump == 'patch':
-            bump_method = self._version.next_patch
+            self._version = self._version.next_patch()
         elif bump == 'minor':
-            bump_method = self._version.next_minor
+            self._version = self._version.next_minor()
         elif bump == 'major':
-            bump_method = self._version.next_major
+            self._version = self._version.next_major()
         else:
             raise AvakasError("Invalid version component")
-
-        self._version = bump_method()
 
         if prerelease:
             prerelease_version = self.get_next_prerelease_version(
