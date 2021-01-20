@@ -103,7 +103,10 @@ class AvakasGitNative(Avakas):
                 tag = self.__create_git_tag()
                 self.__git_push(tag=tag)
 
-    def bump(self, bump=None):
+    def bump(self,
+             bump=None,
+             prerelease=False,
+             prerelease_prefix=None, build_date=None):
         """
         When using 'auto', flavor will attempt to determine whether or not
         the project needs to be bumped from git log history. If keywords are
@@ -116,7 +119,11 @@ class AvakasGitNative(Avakas):
             if bump is None and self.options['default_bump']:
                 bump = self.options['default_bump']
 
-        return super().bump(bump=bump)
+        return super().bump(
+            bump=bump,
+            prerelease=prerelease,
+            prerelease_prefix=prerelease_prefix,
+            build_date=build_date)
 
     def read(self):
         git = Git(self.directory)

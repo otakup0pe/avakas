@@ -124,6 +124,7 @@ class AvakasLegacy(Avakas):
 
     def write_versionfile(self):
         """Write the version file"""
+
         path = os.path.join(self.directory, self.version_filename)
         version_file = open(path, 'w')
         version_file.write("%s\n" % self.version)
@@ -142,7 +143,10 @@ class AvakasLegacy(Avakas):
                 tag = self.__create_git_tag()
                 self.__git_push(tag=tag)
 
-    def bump(self, bump=None):
+    def bump(self,
+             bump=None,
+             prerelease=False,
+             prerelease_prefix=None, build_date=None):
         """
         When using 'auto', flavor will attempt to determine whether or not
         the project needs to be bumped from git log history. If keywords are
@@ -155,7 +159,11 @@ class AvakasLegacy(Avakas):
             if bump is None and self.options['default_bump']:
                 bump = self.options['default_bump']
 
-        return super().bump(bump=bump)
+        return super().bump(
+            bump=bump,
+            prerelease=prerelease,
+            prerelease_prefix=prerelease_prefix,
+            build_date=build_date)
 
     def read(self):
         """
