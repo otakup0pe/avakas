@@ -79,6 +79,16 @@ teardown() {
 
 }
 
+@test "set a prerelease w/date" {
+    avakas_wrapper set "$REPO" 1.2.3 --prerelease --prerelease-date
+    ALMOST="$(TZ='UTC' date "+%Y%m%d%H%M")"
+    avakas_wrapper show "$REPO"
+
+    # Will only show on errors
+    echo "'${output}' does not match the expected '^1.2.3\-1.${ALMOST}[0-9]{2}$'"
+    [[ "$output" =~ ^1.2.3\-1.${ALMOST}[0-9]{2}$ ]]    
+}
+
 @test "bump a prerelease w/date and git build" {
   REV=$(current_rev $REPO)
     avakas_wrapper bump "$REPO" patch --prerelease  --prerelease-date --build
@@ -202,4 +212,29 @@ teardown() {
     [[ "$output" =~  ^0.0.1-alpha.1.${ALMOST}[0-9]{2}\+${REV}\.${GITHUB_RUN_ID}\.${GITHUB_RUN_NUMBER}$ ]]
     unset GITHUB_RUN_ID
     unset GITHUB_RUN_NUMBER
+}
+
+@test "minimal increment prerelease multiple times w/ prefix" {
+    avakas_wrapper bump "$REPO" patch --prerelease --prerelease-prefix beta
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.1-beta.1" ]
+    avakas_wrapper bump "$REPO" patch --prerelease --prerelease-prefix beta
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.1-beta.2" ]
+}
+
+
+@test "increment prerelease multiple times w/ prefix, changing prefix" {
+    avakas_wrapper bump "$REPO" patch --prerelease --prerelease-prefix beta
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.1-beta.1" ]
+    avakas_wrapper bump "$REPO" patch --prerelease --prerelease-prefix beta
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.1-beta.2" ]
+    avakas_wrapper bump "$REPO" patch --prerelease --prerelease-prefix beta
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.1-beta.3" ]
+    avakas_wrapper bump "$REPO" patch --prerelease --prerelease-prefix rc
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.1-rc.1" ]
 }
