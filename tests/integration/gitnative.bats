@@ -36,3 +36,28 @@ teardown() {
     scan_lines "0.0.2" "${lines[@]}"
     [ -e "$REPO/version" ]
 }
+
+@test "autobump git-native version once" {
+    cd $REPO
+    commit_message "$REPO" "you're probably not gonna read this anyway\nbump:patch"
+    avakas_wrapper bump "$REPO" auto --flavor "git-native"
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.2" ]
+}
+
+@test "autobump git-native versions multiple times" {
+    cd $REPO
+    commit_message "$REPO" "whorp\nbump:patch"
+    avakas_wrapper bump "$REPO" auto  --flavor "git-native"
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.2" ]
+    avakas_wrapper bump "$REPO" auto  --flavor "git-native"
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.2" ]
+    avakas_wrapper bump "$REPO" auto  --flavor "git-native"
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.2" ]
+    avakas_wrapper bump "$REPO" auto  --flavor "git-native"
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.2" ]
+}
