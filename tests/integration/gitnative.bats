@@ -61,3 +61,39 @@ teardown() {
     avakas_wrapper show "$REPO"
     [ "$output" == "0.0.2" ]
 }
+
+@test "autobump git-native versions with prereleases" {
+    cd $REPO
+
+    commit_message "$REPO" "FLunkf\nbump:patch"
+    avakas_wrapper bump "$REPO" auto --flavor "git-native" --prerelease --prerelease-prefix 'alpha'
+    [[ "$output"  =~ ^Version\ updated\ from\ 0\.0\.1\ to\ 0\.0\.2 ]]
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.2-alpha.1" ]
+
+    commit_message "$REPO" "squirrels"
+    avakas_wrapper bump "$REPO" auto --flavor "git-native" --prerelease --prerelease-prefix 'alpha'
+    [ "$output" == "Version updated from 0.0.2-alpha.1 to 0.0.2-alpha.2" ]
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.2-alpha.2" ]
+
+    avakas_wrapper bump "$REPO" auto --flavor "git-native"
+    [ "$output" == "Version updated from 0.0.2-alpha.2 to 0.0.2" ]
+
+    # Should do nothing because no bumps in messages since last non-prerelease bump
+    avakas_wrapper bump "$REPO" auto --flavor "git-native" --prerelease --prerelease-prefix 'beta'
+    [ "$output" == "" ]
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.2" ]
+
+    commit_message "$REPO" "hwhelp\nbump:minor"
+
+    avakas_wrapper bump "$REPO" auto --flavor "git-native" --prerelease --prerelease-prefix 'beta'
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.1.0-beta.1" ]
+
+    # No commits since last pre-release bump
+    avakas_wrapper bump "$REPO" auto --flavor "git-native" --prerelease --prerelease-prefix 'beta'
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.1.0-beta.1" ]
+}
