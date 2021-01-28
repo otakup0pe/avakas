@@ -94,8 +94,13 @@ random_rev() {
 tag_repo() {
     local REPO="$1"
     local TAG="$2"
+    local LATEST="$3"
     cd "$REPO"
-    local REV=$(random_rev "$REPO")
+    if [[ -z "$LATEST" ]]; then 
+        local REV=$(random_rev "$REPO")
+    else
+        local REV=$(current_rev "$REPO")
+    fi
     git tag "$TAG" "$REV"
 }
 
@@ -188,6 +193,7 @@ scan_lines() {
 commit_message() {
     local REPO="$1"
     local MSG="$2"
+    cd $REPO
     echo "some kinda ${RANDOM}" > "foo"
     git add "foo"
     git commit -qm "$MSG" "foo"
