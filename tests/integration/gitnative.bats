@@ -21,6 +21,20 @@ teardown() {
     [ -e "$REPO/version" ]
 }
 
+@test "ignore non-version tags on autobump" {
+    avakas_wrapper set "$REPO" "1.0.0" --flavor "git-native"
+
+    commit_message "$REPO" "whorp\nbump:minor"
+    echo "committed"
+    tag_repo "$REPO" "Florf" "latest"
+    echo "tagged"
+    avakas_wrapper bump "$REPO" auto --flavor "git-native"
+    [ "$output" == "Version updated from 1.0.0 to 1.1.0" ]
+    avakas_wrapper show "$REPO"
+    [ "$output" == "1.1.0" ]
+
+}
+
 @test "set an git-native version" {
     avakas_wrapper set "$REPO" "0.0.2" --flavor "git-native"
     scan_lines "Version set to 0.0.2" "${lines[@]}"
