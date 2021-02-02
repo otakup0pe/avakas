@@ -7,6 +7,8 @@ import os
 
 from git import Repo, Git
 
+import semantic_version
+
 from avakas.errors import AvakasError
 from avakas.avakas import Avakas, register_flavor
 from avakas.utils import sort_versions
@@ -60,7 +62,7 @@ class AvakasGitNative(Avakas):
         """Creates a git tag"""
         return self.repo.create_tag(self.version)
 
-    def __determine_bump(self):
+    def __determine_bump(self, for_prerelease=False):
         """Will go through the Git history until the last version bump
         and look for hints that we want to "automatically" bump
         our version"""
@@ -68,11 +70,24 @@ class AvakasGitNative(Avakas):
         vsn = None
         reg = re.compile(r'(\#|bump:|\[)(?P<bump>(patch|minor|major))(.*|\])',
                          re.MULTILINE)
-        tagged_commits = set(tag.commit for tag in self.repo.tags)
+        tagged_commits = {}
+        for tag in self.repo.tags:
+            tagged_commits.setdefault(tag.commit, set()).add(tag)
+
+        # Flag so that when we're getting a prerelease version, if the most
+        # recent commit is already tagged with a prerelease
+        prev_commit = True
+
         for commit in self.repo.iter_commits(self.options['branch']):
             # we go iterate back to the last time we bumped the version
-            if commit in tagged_commits:
-                break
+            for tag in tagged_commits.get(commit, []):
+                try:
+                    tag_version = semantic_version.Version(tag.name)
+                except ValueError:
+                    continue
+                if ((not tag_version.prerelease) or
+                        (for_prerelease and prev_commit)):
+                    return vsn
 
             res = reg.search(commit.message)
             if res:
@@ -85,6 +100,8 @@ class AvakasGitNative(Avakas):
                     vsn = 'major'
                 elif vsn == 'minor' and bump == 'major':
                     vsn = 'major'
+
+            prev_commit = False
         return vsn
 
     def write_versionfile(self):
@@ -115,7 +132,7 @@ class AvakasGitNative(Avakas):
         used and True returned. If not, bump will return False.
         """
         if bump == 'auto':
-            bump = self.__determine_bump()
+            bump = self.__determine_bump(for_prerelease=prerelease)
             if bump is None and self.options['default_bump']:
                 bump = self.options['default_bump']
 
@@ -130,6 +147,8 @@ class AvakasGitNative(Avakas):
         out = git.tag(merged="HEAD", sort="-creatordate")
         tags = out.splitlines()
         tags = [t.strip(self.options['tag_prefix']) for t in tags]
+        tags = [tag for tag in tags if semantic_version.validate(tag)]
+
         tags = sort_versions(tags)
         if len(tags) >= 2:
             latest_tag = tags[-1]
