@@ -16,6 +16,7 @@ from git import Repo
 
 from .avakas import detect_project_flavor
 from .errors import AvakasError
+from .utils import my_version
 
 
 def get_repo(directory):
@@ -114,9 +115,10 @@ def cli_set_version(prerelease=False,
     print("Version set to %s" % version)
 
 
-def parse_args(parser):
-    """Parse our command line arguments."""
+def gen_arg_parser():
+    """Generate parser for command line arguments."""
 
+    argparse.ArgumentParser(prog="avakas")
     bump_levels = ['patch', 'minor', 'major', 'auto']
 
     parser = argparse.ArgumentParser(prog="avakas",
@@ -182,28 +184,44 @@ def parse_args(parser):
                           help='Use the given string as a prebuild prefix',
                           default=None)
 
-    set_p = subparsers.add_parser('set', parents=[common, writable])
+    set_p = subparsers.add_parser('set',
+                                  parents=[common, writable],
+                                  help='explicitly set new version')
     set_p.add_argument('version', nargs=1,
                        help='Desired version to set')
 
-    bump_p = subparsers.add_parser('bump', parents=[common, writable])
+    bump_p = subparsers.add_parser('bump',
+                                   parents=[common, writable],
+                                   help='bump version')
     bump_p.add_argument('level', nargs=1, choices=bump_levels,
                         help='Level to bump at', default='auto')
     bump_p.add_argument('--default-bump', dest='default_bump',
                         choices=bump_levels, help='Level to bump at',
                         default=None)
 
-    subparsers.add_parser('show', parents=[common])
+    subparsers.add_parser('show',
+                          parents=[common],
+                          help='show current project version')
 
-    return parser.parse_args()
+    subparsers.add_parser('version')
+    subparsers.add_parser('help')
+
+    return parser
 
 
 def main():
     """Dat entrypoint"""
-    parser = argparse.ArgumentParser(prog="avakas")
-    args = parse_args(parser)
+    parser = gen_arg_parser()
+    args = parser.parse_args()
 
     if args.operation is None:
+        parser.print_help()
+        sys.exit(1)
+
+    if args.operation == 'version':
+        print("avakas v%s" % my_version())
+        sys.exit(0)
+    elif args.operation == 'help':
         parser.print_help()
         sys.exit(0)
 
@@ -221,6 +239,7 @@ def main():
             cli_set_version(**vars(args))
         else:
             parser.print_help()
+            sys.exit(1)
     except AvakasError as err:
         print("Problem: %s" % err.message, file=sys.stderr)
         sys.exit(1)
