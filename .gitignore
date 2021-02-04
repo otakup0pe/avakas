@@ -8,3 +8,6 @@ avakas.egg-info
 .ci-env
 .coverage
 version
+.tox
+.local
+.cache
