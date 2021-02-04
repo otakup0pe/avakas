@@ -65,7 +65,7 @@ teardown() {
     avakas_wrapper bump "$REPO" auto --tag-prefix "v" --flavor "git-native"
     git show-ref --tags
     avakas_wrapper show "$REPO"
-    [ "$output" == "0.0.2" ]
+    [ "$output" == "v0.0.2" ]
 }
 
 @test "autobump git-native versions multiple times" {
@@ -126,7 +126,7 @@ teardown() {
 
     commit_message "$REPO" "FLunkf\nbump:patch"
     avakas_wrapper bump "$REPO" auto --tag-prefix "v" --flavor "git-native" --prerelease --prerelease-prefix 'alpha'
-    [ "$output"  == "Version updated from v0.0.1 to v0.0.2" ]
+    [ "$output"  == "Version updated from v0.0.1 to v0.0.2-alpha.1" ]
     avakas_wrapper show "$REPO"
     [ "$output" == "v0.0.2-alpha.1" ]
 
