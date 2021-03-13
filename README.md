@@ -1,7 +1,7 @@
 avakas
 ======
 
-[![PyPI](https://img.shields.io/pypi/v/avakas.svg)](https://pypi.python.org/pypi/avakas)[![Maintenance](https://img.shields.io/maintenance/yes/2020.svg)]()
+[![PyPI](https://img.shields.io/pypi/v/avakas.svg)](https://pypi.python.org/pypi/avakas)[![Maintenance](https://img.shields.io/maintenance/yes/2021.svg)]()
 
 
 # Overview
@@ -145,6 +145,19 @@ $ cp ~/.ssh/id_rsa /tmp/ssh-avakas-working
 $ docker run  -v $(pwd):/app -v /tmp/ssh-avakas-working:/etc/avakas otakup0pe/avakas set /app 0.0.1
 ```
 
+# Development
+
+## Local Testing
+
+`make test_in_containers` will run all integration tests against all supported
+minor versions of Python. It does not currently run any style or lint tests,
+and the coverage report it generates points to an absolute path on the
+container (`/src/`) and is therefore not terribly useful, but it does run all
+of the integration tests (the other tests and output are planned to be added).
+
+`make test` will work to run tests against whatever version of Python is
+`python3` on your host. It also runs style and lint checks, and generates a
+coverage report from the integration tests.
 
 # License
 

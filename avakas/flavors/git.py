@@ -2,93 +2,63 @@
 Avakas Built-In Base Project Flavor
 """
 
-import os
 import re
-import sys
+import os
 
-from git import Repo
+from git import Repo, Git
 
 from avakas.errors import AvakasError
 from avakas.avakas import Avakas, register_flavor
-from avakas.utils import stdout_redirect
+from avakas.utils import sort_versions
 
 
-@register_flavor('legacy')
-class AvakasLegacy(Avakas):
+@register_flavor('git-native')
+class AvakasGitNative(Avakas):
     """
-    Default Legacy Avakas Project Flavor
+    Avakas Git Native - using tags only
+    Similar to thorscmversion
     """
-    PROJECT_TYPE = 'legacy'
+    PROJECT_TYPE = 'git-native'
 
     @classmethod
     def guess_flavor(cls, directory):
         """
-        Return true if determined this is the project's flavor.
-        For example, current directory has a meta/version file,
-        return a true value.
+        Always return false as this is an explicitly called
+        flavor.
         """
-        os.path.exists(directory)
-        # For legacy, this should _ALWAYS_ return False
+        # pylint: disable=unused-argument
         return False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.repo = None
         self.version_filename = kwargs['filename']
-        self.commit_files = [self.version_filename]
+        self.repo = self.__load_git()
 
     def __load_git(self):
         """Initializes our local git workspace."""
-        opt = self.options
         repo = Repo(self.directory, search_parent_directories=True)
         if not repo:
             raise AvakasError("Unable to find associated git repo for %s." %
                               self.directory)
 
-        if opt['branch'] not in repo.heads:
-            raise AvakasError("Branch %s branch not found." % opt['branch'])
-
-        if repo.active_branch != repo.heads[opt['branch']]:
-            print("Switching to %s branch" % opt['branch'],
-                  file=sys.stderr)
-            repo.heads[opt['branch']].checkout()
-
-        if opt['remote'] not in [r.name for r in repo.remotes]:
-            raise AvakasError("Remote %s not found" % opt['remote'])
-
-        # we really do not want to be polluting our stdout when
-        # showing the version
-        with stdout_redirect():
-            repo.remotes[opt['remote']].pull(refspec=opt['branch'])
-
         return repo
 
-    def __git_push(self, tag=None):
-        """Push git commit or tag to remote"""
+    def __git_push(self, tag):
+        """Push git tag if remote exists"""
         opt = self.options
-        if tag:
-            resp = self.repo.remotes[opt['remote']].push(tag)
+        if opt['remote'] not in [r.name for r in self.repo.remotes]:
+            return
 
-        resp = self.repo.remotes[opt['remote']].push()
-        resp = resp[0]
+        if tag:
+            remote = self.repo.remote(name=opt['remote'])
+            resp = remote.push(tag)[0]
+
         if resp.flags & 1024 or resp.flags & 32 or resp.flags & 16:
             raise AvakasError("Unexpected git error: %s" % resp.summary)
 
-    def __commit_files(self):
-        """Will commit and push the version file and optionally tags."""
-        opt = self.options
-
-        self.repo.index.add(self.commit_files)
-        skip_hooks = not opt['with_hooks']
-        self.repo.index.commit("Version bumped to %s" % self.version,
-                               skip_hooks=skip_hooks)
-
     def __create_git_tag(self):
         """Creates a git tag"""
-        tag = self.version
-        self.repo.create_tag(tag)
-
-        return tag
+        return self.repo.create_tag(self.version)
 
     def __determine_bump(self):
         """Will go through the Git history until the last version bump
@@ -98,9 +68,10 @@ class AvakasLegacy(Avakas):
         vsn = None
         reg = re.compile(r'(\#|bump:|\[)(?P<bump>(patch|minor|major))(.*|\])',
                          re.MULTILINE)
+        tagged_commits = set(tag.commit for tag in self.repo.tags)
         for commit in self.repo.iter_commits(self.options['branch']):
             # we go iterate back to the last time we bumped the version
-            if commit.message.startswith('Version bumped to'):
+            if commit in tagged_commits:
                 break
 
             res = reg.search(commit.message)
@@ -116,15 +87,8 @@ class AvakasLegacy(Avakas):
                     vsn = 'major'
         return vsn
 
-    def check_if_dirty(self):
-        """Check if the repo is dirty"""
-        self.repo = self.__load_git()
-        if not self.options['skipdirty'] and self.repo.is_dirty():
-            raise AvakasError("Git repo dirty.")
-
     def write_versionfile(self):
         """Write the version file"""
-
         path = os.path.join(self.directory, self.version_filename)
         version_file = open(path, 'w')
         version_file.write("%s\n" % self.version)
@@ -135,10 +99,6 @@ class AvakasLegacy(Avakas):
         tag = None
 
         if not self.options['dry']:
-            if self.version_filename and self.options['commitchanges']:
-                self.__commit_files()
-                self.__git_push()
-
             if not self._version.build:
                 tag = self.__create_git_tag()
                 self.__git_push(tag=tag)
@@ -166,21 +126,26 @@ class AvakasLegacy(Avakas):
             build_date=build_date)
 
     def read(self):
-        """
-        Get the version from the current project flavor
-        """
-        path = os.path.join(self.directory, self.version_filename)
-        version_file = open(path, 'r')
-        version_str = version_file.read()
-        self.version = version_str
-        version_file.close()
-        return True
+        git = Git(self.directory)
+        out = git.tag(merged="HEAD", sort="-creatordate")
+        tags = out.splitlines()
+        tags = [t.strip(self.options['tag_prefix']) for t in tags]
+        tags = sort_versions(tags)
+        if len(tags) >= 2:
+            latest_tag = tags[-1]
+        elif len(tags) == 1:
+            latest_tag = tags[0]
+        else:
+            raise AvakasError("No initial tag found!")
+
+        self.version = latest_tag
+        self.write_versionfile()
+
+        return self.version
 
     def write(self):
         """
         Write version out to file
         """
-
-        self.check_if_dirty()
-        self.write_versionfile()
         self.write_git()
+        self.write_versionfile()

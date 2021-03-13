@@ -230,6 +230,24 @@ teardown() {
     avakas_wrapper show "$REPO"
     [ "$output" == "1.1.0" ]
 }
+
+@test "autobump multiple times with one commit" {
+    cd $REPO
+    commit_message "$REPO" "whorp\nbump:patch"
+    avakas_wrapper bump "$REPO" auto
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.2" ]
+    avakas_wrapper bump "$REPO" auto
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.2" ]
+    avakas_wrapper bump "$REPO" auto
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.2" ]
+    avakas_wrapper bump "$REPO" auto
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.2" ]
+}
+
 @test "autobump with no commit" {
     local rev=$(git rev-parse --verify HEAD | cut -c 1-7)
     avakas_wrapper show "$REPO"
