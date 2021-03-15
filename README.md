@@ -3,6 +3,7 @@ avakas
 
 [![PyPI](https://img.shields.io/pypi/v/avakas.svg)](https://pypi.python.org/pypi/avakas)[![Maintenance](https://img.shields.io/maintenance/yes/2021.svg)]()
 
+
 # Overview
 
 This script provides a simple interface around viewing and manipulating project
@@ -31,7 +32,9 @@ The avakas tool supports the following types of version files
 * NodeJS `package.json`
 * Erlang/OTP and rebar `foo.app.src`
 * Chef Cookbook `metadata.rb`
+* Ansible `meta/main.yml`
 * Plain ol' `version` file
+
 
 # Operations
 
@@ -50,7 +53,6 @@ It is possible to override this default `pre-build` behavior. The
 a string. The `--pre-build-prefix=foo` option will include a string prefix. It
 is possible to include both pre-build _and_ build information, but only if you
 specify a prefix or include the date in prebuild.
-
 
 ```shell
 avakas show $HOME/projects/hal9000
@@ -84,7 +86,7 @@ hints can be specified at any point in the commit message. The hints are
 specified, prefixed by `bump:`. For example, the following commit message would
 result in a minor version bump if it is subsequently "autobumped".
 
-```
+```shell
 $ avakas show .
 0.0.1
 $ git commit -am "hello this is a release\nbump:minor"
@@ -92,23 +94,67 @@ $ avakas bump . auto
 Version updated from 0.0.1 to 0.1.0
 ```
 
+Avakas can also rely on a default bump version to ensure every invocation of Avakas generates a bump build. If a bump hint is not detected within the commit history, the defined defualt-bump level will be used. This is useful for CI/CD systems.
+
+```shell
+avakas bump . auto --default-bump patch
+```
+
+
 # Arguments
 
-### `--dry-run`
+## --tag-prefix
 
-This will result in nothing being pushed to upstream git sources.
+A prefix to use with the version. Generally used for non-semantic version compliant v1.0 style version strings.
 
-### `--branch`
+## --branch
 
-The branch to use when updating git.
+The authoritative mainline branch of your project. This is also used to compare for prereleases.
 
-### `--remote`
+## --remote
 
-The remote to push tags and version updates.
+The git remote origin to push changes to.
 
-### `--tag-prefix`
+## --filename
 
-This prefix will be added to the version string when creating a git tag.
+The filename to use for generating a version file.
+
+## --flavor
+
+Flavor of project (Presently: legacy|chef|ansible|nodejs|erlang).
+
+## --build-meta
+
+Whether to apply semantic version compliant build metadata to the version. (Example: `1.0.0+4c5fa2.1`)
+
+## --skip-dirty
+
+Skip checking if local repo is dirty.
+
+## --skip-commit-changes
+
+Skip committing generated version files.
+
+## --with-hooks
+
+Run git hooks during operations.
+
+## --dry-run
+
+Will not push to git.
+
+## --prerelease
+
+Will attempt to generate a prerelease version. (Example: `1.0.0-1`)
+
+## --prerelease-date
+
+Will attach the data to the prerelease identifiers. (Example: `1.0.0-1.20201220`)
+
+## --prerelease-prefix
+
+Will use a prefix for the prerelease. (Example: `1.0.0-alpha.1`)
+
 
 # Docker
 
@@ -158,6 +204,7 @@ generates a coverage report from the integration tests.
 # License
 
 [MIT](https://github.com/otakup0pe/avakas/blob/master/LICENSE)
+
 
 # Author
 
