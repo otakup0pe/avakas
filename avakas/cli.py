@@ -14,7 +14,7 @@ import argparse
 
 from git import Repo
 
-from .avakas import detect_project_flavor
+from .avakas import detect_project_flavor, Avakas
 from .errors import AvakasError
 from .utils import my_version
 
@@ -142,8 +142,13 @@ def gen_arg_parser():
     common.add_argument('--filename', dest='filename',
                         help='File name. Used for fallback versioning.',
                         default='version')
+    flavor_text = 'Automation flavor for the project (%s)'
+    flavors = []
+    for flavor, _class in Avakas.project_flavors.items():
+        flavors.append(flavor)
+
     common.add_argument('--flavor', dest='flavor',
-                        help='Automation flavor for the project',
+                        help=flavor_text % ','.join(flavors),
                         default='auto')
     common.add_argument('directory', nargs=1,
                         help='Directory of the project', default=os.getcwd())

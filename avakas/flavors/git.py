@@ -148,4 +148,3 @@ class AvakasGitNative(Avakas):
         Write version out to file
         """
         self.write_git()
-        self.write_versionfile()

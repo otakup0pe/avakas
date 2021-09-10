@@ -10,19 +10,23 @@ ifndef CI
 	CI_ENV=$(HERE)/.ci-env/bin/
 endif
 
-
 all: test package
 
-testenv:
-	test -z $(CI) && (test -d .ci-env || ( mkdir .ci-env && virtualenv -p python3 .ci-env )) || true
-	test -z $(CI) && \
-		(echo "Outside CI" && .ci-env/bin/pip install -r requirements.txt -r requirements-dev.txt --upgrade) || \
-		(echo "Within CI" && pip install -r requirements.txt -r requirements-dev.txt)
+testenv: version
+ifndef CI
+	echo "Outside CI"
+	test -d .ci-env || ( mkdir .ci-env && virtualenv -p python3 .ci-env) && .ci-env/bin/python3 -m pip install --upgrade pip
+	.ci-env/bin/pip install -r requirements.txt -r requirements-dev.txt --upgrade
+endif
+ifdef CI
+	echo "Within CI"
+	pip install -r requirements.txt -r requirements-dev.txt
+endif
 
-version: testenv
-	$(CI_ENV)python -m avakas show . --flavor "git-native"
+version:
+	./scripts/versiongen
 
-install: testenv version
+install: testenv
 	$(CI_ENV)python setup.py install
 
 package:
@@ -36,7 +40,7 @@ test: testenv install
 	$(CI_ENV)coverage report -m
 	test -z $(TRAVIS) && $(CI_ENV)coverage erase || true
 
-generate_testing_artifact: version
+generate_testing_artifact: testenv
 	tox --sdistonly
 
 test_in_container_37: generate_testing_artifact
@@ -57,6 +61,9 @@ clean:
 	rm -rf .bats-git .bats .ci-env avakas.egg-info dist build .coverage .tox
 	python setup.py clean
 	rm version
+
+distclean: clean
+	rm -rf .bats-git .ci-env
 
 container:
 	docker build \

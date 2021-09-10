@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -e
+# always know where your towel is
+SCRIPT_DIR=$(cd "${0%/*}" && pwd)
+export ROOTDIR="${SCRIPT_DIR%/*}"
+
+dbg() {
+    >&2 echo "$*"
+}
+
+problems() {
+    >&2 echo "Error: $*"
+    exit 1
+}
+
+AVAKAS="${ROOTDIR}/avakas.py"
+
+VSN="$("$AVAKAS" show "$ROOTDIR" --flavor git-native 2> /dev/null)"
+
+if [ -z "$VSN" ] ; then
+    problems "unable to determine version"
+fi
+
+sed -e "s/@@VERSION@@/${VSN}/" < "${ROOTDIR}/templates/setup.py" > "${ROOTDIR}/setup.py"
+
+dbg "Generated files at version ${VSN}"

@@ -6,11 +6,11 @@ import os
 import re
 import sys
 
-from git import Repo
-
 from avakas.errors import AvakasError
 from avakas.avakas import Avakas, register_flavor
 from avakas.utils import stdout_redirect
+
+from git import Repo
 
 
 @register_flavor('legacy')

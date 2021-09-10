@@ -7,7 +7,7 @@ import datetime
 
 from semantic_version import Version
 
-from .errors import AvakasError
+from avakas.errors import AvakasError
 
 
 def detect_project_flavor(**kwargs):

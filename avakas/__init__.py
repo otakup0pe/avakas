@@ -2,10 +2,9 @@
 avakas main load
 """
 
-import avakas.flavors
-
-from .errors import AvakasError
-from .avakas import Avakas, register_flavor
+from avakas import flavors
+from avakas.errors import AvakasError
+from avakas.avakas import Avakas, register_flavor
 
 __all__ = [
     'Avakas',
