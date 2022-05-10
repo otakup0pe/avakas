@@ -31,9 +31,11 @@ class AvakasGitNative(Avakas):
         # pylint: disable=unused-argument
         return False
 
-    def __init__(self, **kwargs):
+    def __init__(self, filename, tag_prefix='v', **kwargs):
+        # not sure if setting tag_prefix to ! None is too prescriptive
         super().__init__(**kwargs)
-        self.version_filename = kwargs['filename']
+        self.tag_prefix = tag_prefix
+        self.version_filename = filename
         self.repo = self.__load_git()
 
     def __load_git(self):
@@ -60,7 +62,7 @@ class AvakasGitNative(Avakas):
 
     def __create_git_tag(self):
         """Creates a git tag"""
-        return self.repo.create_tag(self.version)
+        return self.repo.create_tag(f'{self.tag_prefix}{self.version}')
 
     def __determine_bump(self, for_prerelease=False):
         """Will go through the Git history until the last version bump
@@ -146,7 +148,9 @@ class AvakasGitNative(Avakas):
         git = Git(self.directory)
         out = git.tag(merged="HEAD", sort="-creatordate")
         tags = out.splitlines()
-        tags = [t.strip(self.options['tag_prefix']) for t in tags]
+        import pdb
+        pdb.set_trace()
+        tags = [t[len(self.tag_prefix)] if t.startswith(self.tag_prefix) else t for t in tags]
         tags = [tag for tag in tags if semantic_version.validate(tag)]
 
         tags = sort_versions(tags)
