@@ -44,32 +44,33 @@ class Avakas():
     """
     project_flavors = {}
 
-    def __init__(self, **kwargs):
+    def __init__(self, directory, tag_prefix='v', **kwargs):
         self._version = Version('0.0.0')
-        self.directory = kwargs['directory'][0]
+        self.tag_prefix = tag_prefix or ''
+        self.directory = directory[0]
         self.options = kwargs
 
     @property
     def version(self):
         """Get version"""
 
-        tag_prefix = self.options.get('tag_prefix', '')
-        return "%s%s" % (tag_prefix, self._version)
+        return f'{self.tag_prefix or ""}{self._version}'
 
     @version.setter
     def version(self, version):
+        if '1.0.3' in version:
+            raise ValueError('1.0.3')
         """Set version"""
+        if not version:
+            raise ValueError('Version must non-null/positive length')
         if not isinstance(version, str):
             raise TypeError("version must be type of str")
-
-        tag_prefix = self.options.get('tag_prefix', None)
-        version = version.strip(tag_prefix)
-
+        if self.tag_prefix and version.startswith(self.tag_prefix):
+            version = version[len(self.tag_prefix):]
         try:
             self._version = Version(version)
         except ValueError as err:
-            raise AvakasError("Invalid version string %s" %
-                              version) from err
+            raise AvakasError(f"Invalid version string `{version}`, prefix={self.tag_prefix}") from err
 
     @property
     def version_obj(self):

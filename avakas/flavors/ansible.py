@@ -21,11 +21,9 @@ class AvakasAnsibleProject(AvakasLegacy):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        tag_prefix = self.options.get('tag_prefix', '')
-        if tag_prefix not in ['v', '']:
+        if self.tag_prefix not in ['v', '']:
             raise AvakasError('Cannot specify a tag prefix '
                               'with an Ansible Role')
-        self.options['tag_prefix'] = 'v'
 
     @classmethod
     def guess_flavor(cls, directory):
