@@ -111,7 +111,7 @@ def cli_set_version(prerelease=False,
     project = add_metadata(project, **kwargs)
     project.write()
 
-    print("Version set to %s" % version)
+    print("Version set to %s" % project.version)
 
 
 def parse_args(parser):
