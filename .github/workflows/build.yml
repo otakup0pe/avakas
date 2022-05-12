@@ -17,6 +17,10 @@ jobs:
         python-version: [3.7, 3.8]
     steps:
       - uses: "actions/checkout@v2"
+        with:
+          fetch-depth: 0
+      - name: test branches
+        run: git branch
       - name: "Set up Python ${{ matrix.python-version }}"
         uses: "actions/setup-python@v2"
         with:
