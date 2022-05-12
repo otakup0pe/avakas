@@ -120,7 +120,7 @@ teardown() {
     commit_message "$REPO" "FLunkf\nbump:patch"
 
     avakas_wrapper bump "$REPO" auto --flavor "git-native" --prerelease --prerelease-prefix 'alpha'
-    [[ "$output"  =~ ^Version\ updated\ from\ 0\.0\.1\ to\ 0\.0\.2 ]]
+    [[ "$output"  =~ ^Version\ updated\ from\ 0\.0\.1\ to\ 0\.0\.2-alpha\.1 ]]
     avakas_wrapper show "$REPO" --flavor "git-native"
     [ "$output" == "0.0.2-alpha.1" ]
 
@@ -185,7 +185,7 @@ teardown() {
     [ "$output" == "v1.1.0-beta.1" ]
 
     # No commits since last pre-release bump
-    avakas_wrapper bump "$REPO" auto --flavor "git-native" --tag-prefix "v"--prerelease --prerelease-prefix 'beta'
+    avakas_wrapper bump "$REPO" auto --flavor "git-native" --tag-prefix "v" --prerelease --prerelease-prefix 'beta'
     avakas_wrapper show "$REPO" --flavor "git-native" --tag-prefix 'v'
     [ "$output" == "v1.1.0-beta.1" ]
 }
