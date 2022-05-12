@@ -47,6 +47,12 @@ class AvakasGitNative(Avakas):
 
         return repo
 
+    def _version_from_tag(self, tag):
+        try:
+            return semantic_version.Version(tag.name[len(self.tag_prefix):])
+        except ValueError:
+            return None
+
     def __git_push(self, tag):
         """Push git tag if remote exists"""
         opt = self.options
@@ -62,7 +68,7 @@ class AvakasGitNative(Avakas):
 
     def __create_git_tag(self):
         """Creates a git tag"""
-        return self.repo.create_tag(f'{self.tag_prefix}{self.version}')
+        return self.repo.create_tag(self.version)
 
     def __determine_bump(self, for_prerelease=False):
         """Will go through the Git history until the last version bump
@@ -76,20 +82,26 @@ class AvakasGitNative(Avakas):
         for tag in self.repo.tags:
             tagged_commits.setdefault(tag.commit, set()).add(tag)
 
-        # Flag so that when we're getting a prerelease version, if the most
-        # recent commit is already tagged with a prerelease
-        prev_commit = True
+        # the most recent tag, whether pre-release or no
+        tag_version = None
+        release_version = None
+        bump = None
 
         for commit in self.repo.iter_commits(self.options['branch']):
             # we go iterate back to the last time we bumped the version
-            for tag in tagged_commits.get(commit, []):
-                try:
-                    tag_version = semantic_version.Version(tag.name)
-                except ValueError:
-                    continue
-                if ((not tag_version.prerelease) or
-                        (for_prerelease and prev_commit)):
-                    return vsn
+            if commit in tagged_commits:
+                version_tags = [self._version_from_tag(tag) for tag in tagged_commits[commit]]
+                version_tags = [tag for tag in version_tags if tag is not None]
+                release_tags = [tag for tag in version_tags if not tag.prerelease]
+                if any(release_tags):
+                    release_version = max(release_tags)
+                if any(version_tags) and tag_version is None:
+                    tag_version = max(version_tags)
+                    if for_prerelease and commit == self.repo.heads[self.options['branch']].commit:
+                        return bump
+
+            if release_version is not None:
+                break  # break out of for commit iterator
 
             res = reg.search(commit.message)
             if res:
@@ -103,7 +115,8 @@ class AvakasGitNative(Avakas):
                 elif vsn == 'minor' and bump == 'major':
                     vsn = 'major'
 
-            prev_commit = False
+            if release_version is not None:
+                break
         return vsn
 
     def write_versionfile(self):
@@ -145,20 +158,21 @@ class AvakasGitNative(Avakas):
             build_date=build_date)
 
     def read(self):
-        git = Git(self.directory)
-        out = git.tag(merged="HEAD", sort="-creatordate")
-        tags = out.splitlines()
-        import pdb
-        pdb.set_trace()
-        tags = [t[len(self.tag_prefix)] if t.startswith(self.tag_prefix) else t for t in tags]
-        tags = [tag for tag in tags if semantic_version.validate(tag)]
+        latest_tag = None
+        commit_to_tags = {}
+        for tag in self.repo.tags:
+            commit_to_tags.setdefault(tag.commit, set()).add(tag)
 
-        tags = sort_versions(tags)
-        if len(tags) >= 2:
-            latest_tag = tags[-1]
-        elif len(tags) == 1:
-            latest_tag = tags[0]
-        else:
+        for commit in self.repo.iter_commits(self.options['branch']):
+            if commit in commit_to_tags:
+                version_tags = [self._version_from_tag(tag) for tag in commit_to_tags[commit]]
+                version_tags = [tag for tag in version_tags if tag is not None]
+                if version_tags:
+                    latest_tag = max(version_tags)
+            if latest_tag is not None:
+                break
+
+        if latest_tag is None:
             raise AvakasError("No initial tag found!")
 
         self.version = latest_tag
@@ -172,3 +186,7 @@ class AvakasGitNative(Avakas):
         """
         self.write_git()
         self.write_versionfile()
+
+
+class PreviousCommitTagged(Exception):
+    pass
