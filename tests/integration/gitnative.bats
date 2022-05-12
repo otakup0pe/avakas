@@ -43,7 +43,7 @@ teardown() {
 
 }
 
-@test "set an git-native version" {
+@test "set a git-native version" {
     avakas_wrapper set "$REPO" "0.0.2" --flavor "git-native"
     scan_lines "Version set to 0.0.2" "${lines[@]}"
     avakas_wrapper show "$REPO" --flavor "git-native"
@@ -60,7 +60,7 @@ teardown() {
     [ -e "$REPO/version" ]
 }
 
-@test "bump an git-native version" {
+@test "bump a git-native version" {
     avakas_wrapper bump "$REPO" patch --flavor "git-native"
     scan_lines "Version updated from 0.0.1 to 0.0.2" "${lines[@]}"
     avakas_wrapper show "$REPO" --flavor "git-native"
@@ -68,7 +68,7 @@ teardown() {
     [ -e "$REPO/version" ]
 }
 
-@test "bump an git-native version with tag prefix" {
+@test "bump a git-native version with tag prefix" {
     tag_repo "$REPO" 'v0.0.1' "latest"
     avakas_wrapper bump "$REPO" patch --flavor "git-native" --tag-prefix 'v'
     scan_lines "Version updated from v0.0.1 to v0.0.2" "${lines[@]}"

@@ -20,7 +20,7 @@ teardown() {
     scan_lines "v0.0.1" "${lines[@]}"
 }
 
-@test "show a ansible version no tag prefix" {
+@test "show an ansible version no tag prefix" {
     tag_repo "$REPO" "0.0.1" "latest"
     avakas_wrapper show "$REPO"
     scan_lines "0.0.1" "${lines[@]}"
