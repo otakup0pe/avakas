@@ -22,7 +22,8 @@ testenv:
 version: testenv
 	# TOREMOVE
 	git branch
-	$(CI_ENV)python -m avakas show . --flavor "git-native"
+	git branch --show-current
+	$(CI_ENV)python -m avakas show . --flavor "git-native" --branch $$(git branch --show-current)
 
 install: testenv version
 	$(CI_ENV)python setup.py install
