@@ -108,7 +108,7 @@ tag_repo() {
 update_repo() {
     local REPO="$1"
     cd "$REPO"
-    git pull -q origin master
+    git pull -q origin mainline
 }
 
 plain_version() {
