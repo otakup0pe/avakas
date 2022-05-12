@@ -12,6 +12,17 @@ import semantic_version
 from avakas.errors import AvakasError
 from avakas.avakas import Avakas, register_flavor
 
+PATCH = 'patch'
+MAJOR = 'major'
+MINOR = 'minor'
+
+# not gonna convert everything to be an enum just yet -TMJ
+BUMPS = {
+    PATCH: 0,
+    MINOR: 1,
+    MAJOR: 2
+}
+
 
 @register_flavor('git-native')
 class AvakasGitNative(Avakas):
@@ -114,12 +125,8 @@ class AvakasGitNative(Avakas):
                 bump = res.group('bump')
                 if not vsn:
                     vsn = bump
-                elif vsn == 'patch' and bump == 'minor':
-                    vsn = 'minor'
-                elif vsn == 'patch' and bump == 'major':
-                    vsn = 'major'
-                elif vsn == 'minor' and bump == 'major':
-                    vsn = 'major'
+                else:
+                    vsn = max((vsn, bump), key=lambda x: BUMPS[x])
 
             if release_version is not None:
                 break
@@ -194,7 +201,3 @@ class AvakasGitNative(Avakas):
         """
         self.write_git()
         self.write_versionfile()
-
-
-class PreviousCommitTagged(Exception):
-    pass
