@@ -183,7 +183,7 @@ scan_lines() {
     local STRING="$1"
     shift
     while [ ! -z "$1" ] ; do
-        if [ "$1" == "$STRING" ] ; then
+        if grep -qE "$STRING" <<< "$1" ; then
             return 0
         fi
         shift
