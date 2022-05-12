@@ -5,13 +5,12 @@ Avakas Built-In Base Project Flavor
 import re
 import os
 
-from git import Repo, Git
+from git import Repo
 
 import semantic_version
 
 from avakas.errors import AvakasError
 from avakas.avakas import Avakas, register_flavor
-from avakas.utils import sort_versions
 
 
 @register_flavor('git-native')
@@ -86,18 +85,25 @@ class AvakasGitNative(Avakas):
         tag_version = None
         release_version = None
         bump = None
+        head_commit = self.repo.heads[self.options['branch']].commit
 
         for commit in self.repo.iter_commits(self.options['branch']):
             # we go iterate back to the last time we bumped the version
             if commit in tagged_commits:
-                version_tags = [self._version_from_tag(tag) for tag in tagged_commits[commit]]
+                version_tags = [self._version_from_tag(tag) for tag in
+                                tagged_commits[commit]]
+
                 version_tags = [tag for tag in version_tags if tag is not None]
-                release_tags = [tag for tag in version_tags if not tag.prerelease]
+
+                release_tags = [tag for tag in version_tags if
+                                not tag.prerelease]
+
                 if any(release_tags):
                     release_version = max(release_tags)
                 if any(version_tags) and tag_version is None:
                     tag_version = max(version_tags)
-                    if for_prerelease and commit == self.repo.heads[self.options['branch']].commit:
+
+                    if for_prerelease and commit == head_commit:
                         return bump
 
             if release_version is not None:
@@ -165,7 +171,9 @@ class AvakasGitNative(Avakas):
 
         for commit in self.repo.iter_commits(self.options['branch']):
             if commit in commit_to_tags:
-                version_tags = [self._version_from_tag(tag) for tag in commit_to_tags[commit]]
+                version_tags = [self._version_from_tag(tag) for tag in
+                                commit_to_tags[commit]]
+
                 version_tags = [tag for tag in version_tags if tag is not None]
                 if version_tags:
                     latest_tag = max(version_tags)

@@ -71,7 +71,12 @@ class Avakas():
             try:
                 version = Version(version)
             except ValueError as err:
-                raise AvakasError(f"Invalid version string `{version}`, prefix={self.tag_prefix}") from err
+                # Doing this to get around the linter, which seems like a
+                # hobgoblin, but couldn't figure out how to get the pylint
+                # hints to work
+                prefix = self.tag_prefix
+                msg = f"Invalid version string `{version}`,prefix={prefix}"
+                raise AvakasError(msg) from err
 
         self._version = version
 
@@ -95,50 +100,6 @@ class Avakas():
     @classmethod
     def write(cls):
         """Write version data to a project"""
-
-
-    def __determine_bump(self, for_prerelease=False):
-        """Will go through the Git history until the last version bump
-        and look for hints that we want to "automatically" bump
-        our version"""
-        self.repo = self.__load_git()
-        vsn = None
-        reg = re.compile(r'(\#|bump:|\[)(?P<bump>(patch|minor|major))(.*|\])',
-                         re.MULTILINE)
-        tagged_commits = {}
-        for tag in self.repo.tags:
-            tagged_commits.setdefault(tag.commit, set()).add(tag)
-
-        # Flag so that when we're getting a prerelease version, if the most
-        # recent commit is already tagged with a prerelease
-        prev_commit = True
-
-        for commit in self.repo.iter_commits(self.options['branch']):
-            # we go iterate back to the last time we bumped the version
-            for tag in tagged_commits.get(commit, []):
-                try:
-                    tag_version = semantic_version.Version(tag.name)
-                except ValueError:
-                    continue
-                if ((not tag_version.prerelease) or
-                        (for_prerelease and prev_commit)):
-                    return vsn
-
-            res = reg.search(commit.message)
-            if res:
-                bump = res.group('bump')
-                if not vsn:
-                    vsn = bump
-                elif vsn == 'patch' and bump == 'minor':
-                    vsn = 'minor'
-                elif vsn == 'patch' and bump == 'major':
-                    vsn = 'major'
-                elif vsn == 'minor' and bump == 'major':
-                    vsn = 'major'
-
-            prev_commit = False
-        return vsn
-
 
     def bump(self,
              bump=None,
@@ -211,8 +172,8 @@ class Avakas():
 
         current_prefix_match = starting_version.prerelease[:prerelease_len]
 
-        if (new_version == starting_version.truncate() and
-                prefix == current_prefix_match):
+        if (new_version == starting_version.truncate()
+                and prefix == current_prefix_match):
 
             # prerelease bumping for the same release.
             # this will catch a case where there's e.g. rc.dev.1

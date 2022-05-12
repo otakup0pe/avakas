@@ -44,13 +44,14 @@ config_repo() {
     git config pull.rebase false
     git config user.email "nobody@example.com"
     git config user.name "some user"
+    git.config.
 }
 
 fake_repo() {
     local REPO="${AVAKAS_TEST_DIR}/briefcase-${BATS_TEST_NAME}-${RANDOM}"
     mkdir "${REPO}"
     cd "$REPO"
-    git init -q
+    git init -q --initial-branch=mainline
     config_repo "$REPO"
     local FILES="$(fake_file "$REPO")"
     FILES="${FILES} $(fake_file "$REPO")"

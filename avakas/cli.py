@@ -131,7 +131,7 @@ def parse_args(parser):
 
     common.add_argument('--branch', dest='branch',
                         help='Branch to use when updating git',
-                        default='master')
+                        default='mainline')
 
     common.add_argument('--remote', dest='remote',
                         help='Git remote',
