@@ -20,10 +20,7 @@ testenv:
 		(echo "Within CI" && pip install -r requirements.txt -r requirements-dev.txt)
 
 version: testenv
-	# TOREMOVE
-	git branch
-	git branch --show-current
-	$(CI_ENV)python -m avakas show . --flavor "git-native" --branch $$(git branch --show-current)
+	(CI_ENV)python -m avakas show . --flavor "git-native" --branch $$(git branch --show-current)
 
 install: testenv version
 	$(CI_ENV)python setup.py install
