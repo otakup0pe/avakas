@@ -24,7 +24,7 @@ jobs:
         with:
           python-version: "${{ matrix.python-version }}"
       - name: "Config git"
-        run: "git config init.defaultbranch=mainline"
+        run: "git config init.defaultbranch mainline"
       - name: "run tests"
         run: "make test"
       - name: "build container"
