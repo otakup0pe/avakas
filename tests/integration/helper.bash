@@ -44,7 +44,6 @@ config_repo() {
     git config pull.rebase false
     git config user.email "nobody@example.com"
     git config user.name "some user"
-    git.config.
 }
 
 fake_repo() {
@@ -72,6 +71,7 @@ origin_repo() {
     local REPO="$1"
     cd "$REPO"
     git config --bool core.bare true
+    git config init.defaultbranch mainline
     rm -rf "${REPO}"/*
 }
 
