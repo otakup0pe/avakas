@@ -24,7 +24,7 @@ version: testenv
 	git branch
 	$(CI_ENV)python -m avakas show . --flavor "git-native"
 
-install: testenv version
+install: testenv
 	$(CI_ENV)python setup.py install
 
 package:
@@ -38,7 +38,7 @@ test: testenv install
 	$(CI_ENV)coverage report -m
 	test -z $(TRAVIS) && $(CI_ENV)coverage erase || true
 
-generate_testing_artifact: version
+generate_testing_artifact:
 	tox --sdistonly
 
 test_in_container_37: generate_testing_artifact
