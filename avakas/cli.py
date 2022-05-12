@@ -112,7 +112,7 @@ def cli_set_version(prerelease=False,
     project = add_metadata(project, **kwargs)
     project.write()
 
-    print("Version set to %s" % project.version)
+    print(f"Version set to {project.version}")
 
 
 def gen_arg_parser():
