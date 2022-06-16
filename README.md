@@ -203,7 +203,7 @@ generates a coverage report from the integration tests.
 
 # License
 
-[MIT](https://github.com/otakup0pe/avakas/blob/master/LICENSE)
+[MIT](https://github.com/otakup0pe/avakas/blob/mainline/LICENSE)
 
 
 # Author

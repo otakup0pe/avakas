@@ -16,13 +16,25 @@ jobs:
       matrix:
         python-version: [3.7, 3.8]
     steps:
+      # These two conditional checkouts allow for getting all branches in a
+      # pull request. I'm having trouble finding a source for these stanzas, but
+      # definitely found these by searching
       - uses: "actions/checkout@v2"
+        if: github.event_name == 'pull_request'
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - uses: "actions/checkout@v2"
+        if: github.event_name == 'push'
         with:
           fetch-depth: 0
       - name: "Set up Python ${{ matrix.python-version }}"
         uses: "actions/setup-python@v2"
         with:
           python-version: "${{ matrix.python-version }}"
+      - name: "Config git"
+        run: "git config init.defaultbranch mainline"
       - name: "run tests"
         run: "make test"
       - name: "build container"

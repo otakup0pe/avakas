@@ -50,7 +50,7 @@ fake_repo() {
     local REPO="${AVAKAS_TEST_DIR}/briefcase-${BATS_TEST_NAME}-${RANDOM}"
     mkdir "${REPO}"
     cd "$REPO"
-    git init -q
+    git init -q --initial-branch=mainline
     config_repo "$REPO"
     local FILES="$(fake_file "$REPO")"
     FILES="${FILES} $(fake_file "$REPO")"
@@ -71,6 +71,7 @@ origin_repo() {
     local REPO="$1"
     cd "$REPO"
     git config --bool core.bare true
+    git config init.defaultbranch mainline
     rm -rf "${REPO}"/*
 }
 
@@ -94,15 +95,20 @@ random_rev() {
 tag_repo() {
     local REPO="$1"
     local TAG="$2"
+    local LATEST="$3"
     cd "$REPO"
-    local REV=$(random_rev "$REPO")
+    if [[ -z "$LATEST" ]]; then 
+        local REV=$(random_rev "$REPO")
+    else
+        local REV=$(current_rev "$REPO")
+    fi
     git tag "$TAG" "$REV"
 }
 
 update_repo() {
     local REPO="$1"
     cd "$REPO"
-    git pull -q origin master
+    git pull -q origin mainline
 }
 
 plain_version() {
@@ -188,6 +194,7 @@ scan_lines() {
 commit_message() {
     local REPO="$1"
     local MSG="$2"
+    cd $REPO
     echo "some kinda ${RANDOM}" > "foo"
     git add "foo"
     git commit -qm "$MSG" "foo"
