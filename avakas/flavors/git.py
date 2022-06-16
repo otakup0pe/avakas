@@ -144,9 +144,8 @@ class AvakasGitNative(Avakas):
         tag = None
 
         if not self.options['dry']:
-            if not self._version.build:
-                tag = self.__create_git_tag()
-                self.__git_push(tag=tag)
+            tag = self.__create_git_tag()
+            self.__git_push(tag=tag)
 
     def bump(self,
              bump=None,
