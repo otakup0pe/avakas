@@ -189,3 +189,14 @@ teardown() {
     avakas_wrapper show "$REPO" --flavor "git-native" --tag-prefix 'v'
     [ "$output" == "v1.1.0-beta.1" ]
 }
+
+@test "increment git native prerelease multiple times, in different branches" {
+    cd $REPO
+    avakas_wrapper bump "$REPO" patch --prerelease --prerelease-prefix beta
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.1-beta.1" ]
+    git checkout -b branch2
+    avakas_wrapper bump "$REPO" patch --prerelease --prerelease-prefix beta
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.1-beta.2" ]
+}
