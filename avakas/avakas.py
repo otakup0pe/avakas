@@ -142,6 +142,9 @@ class Avakas():
     def _get_extant_prerelease_versions(prefix, base_version=None,
                                         extant_versions=None):
         """
+        Return a set of all integer versions that have existed of the specific
+        pre-release type/prefix (e.g. 'a', 'alpha', 'rc', etc.)
+
         ## Note:
 
         `bump` sets `._version` to a non-pre release before calling this, so
