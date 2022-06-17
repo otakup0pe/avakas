@@ -124,7 +124,7 @@ class Avakas():
 
         if prerelease:
             prerelease_version = self.get_next_prerelease_version(
-                original, prefix=prerelease_prefix
+                original, new_version=self._version, prefix=prerelease_prefix
             )
 
             self.make_prerelease(
@@ -137,6 +137,34 @@ class Avakas():
             raise AvakasError(msg)
 
         return True
+
+    @staticmethod
+    def _get_extant_prerelease_versions(prefix, base_version=None,
+                                        extant_versions=None):
+        """
+        Return a set of all integer versions that have existed of the specific
+        pre-release type/prefix (e.g. 'a', 'alpha', 'rc', etc.)
+
+        ## Note:
+
+        `bump` sets `._version` to a non-pre release before calling this, so
+        can not use current `._version as an extant version
+        """
+
+        extant_pre = set()
+        if extant_versions is None:
+            extant_versions = set()
+        else:
+            # be liberal in what you accept
+            extant_versions = set(extant_versions)
+
+        for version in extant_versions:
+            if not version.truncate() == base_version.truncate():
+                continue
+            if version.prerelease:
+                extant_pre.add(int(version.prerelease[len(prefix):][0][0]))
+
+        return extant_pre
 
     def get_next_prerelease_version(
             self, starting_version=None, prefix=None,
@@ -172,6 +200,9 @@ class Avakas():
 
         current_prefix_match = starting_version.prerelease[:prerelease_len]
 
+        extant_prereleases = self._get_extant_prerelease_versions(
+            prefix, base_version=new_version,
+            extant_versions=set([starting_version]))
         if (new_version == starting_version.truncate()
                 and prefix == current_prefix_match):
 
@@ -188,12 +219,14 @@ class Avakas():
                 # either there is no explicit prerelease version in the
                 # current version, or there are additional prerelease
                 # prefixes which are not intended for this bump
-                prerelease_version = 0
+                prerelease_version = 1
+
         else:
             # different release or different prefix
-            prerelease_version = 0
+            prerelease_version = 1
 
-        prerelease_version += 1
+        while prerelease_version in extant_prereleases:
+            prerelease_version += 1
 
         return prerelease_version
 
@@ -204,7 +237,7 @@ class Avakas():
         Args:
             * version (`int` or `str`(digits only)): The numeric prerelease
                 version. i.e., for -dev.3, this is `3` or `"3"`.
-            * prefix (`str`, optional): the alphabetic (not enforced) prebuild
+            * prefix (`str`,optional): the alphabetic (not enforced) prebuild
                 prefix, such as `a`, `beta`, `dev`, and such.
             * build_date
         """
