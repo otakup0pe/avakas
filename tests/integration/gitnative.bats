@@ -192,11 +192,13 @@ teardown() {
 
 @test "increment git native prerelease multiple times, in different branches" {
     cd $REPO
+    avakas_wrapper show "$REPO"
+    [ "$output" == "0.0.1" ]
     avakas_wrapper bump "$REPO" patch --prerelease --prerelease-prefix beta
     avakas_wrapper show "$REPO"
-    [ "$output" == "0.0.1-beta.1" ]
+    [ "$output" == "0.0.2-beta.1" ]
     git checkout -b branch2
     avakas_wrapper bump "$REPO" patch --prerelease --prerelease-prefix beta
     avakas_wrapper show "$REPO"
-    [ "$output" == "0.0.1-beta.2" ]
+    [ "$output" == "0.0.2-beta.2" ]
 }
