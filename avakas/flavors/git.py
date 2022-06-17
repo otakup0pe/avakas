@@ -80,6 +80,26 @@ class AvakasGitNative(Avakas):
         """Creates a git tag"""
         return self.repo.create_tag(self.version)
 
+    def _get_extant_prerelease_versions(
+            self, prefix, base_version=None, extant_versions=None):
+        """
+        Get all tags in this repo, use them to determine all of the pre-
+        releases for this version, with this pre-release prefix, which have
+        previously existed
+
+        ## Note:
+           This does not fetch tags from remotes
+        """
+        if extant_versions is None:
+            extant_versions = set()
+
+        tag_versions = [self._version_from_tag(t) for t in self.repo.tags]
+        extant_versions.update(v for v in tag_versions if v is not None)
+        return super()._get_extant_prerelease_versions(
+            prefix=prefix,
+            base_version=base_version,
+            extant_versions=extant_versions)
+
     def __determine_bump(self, for_prerelease=False):
         """Will go through the Git history until the last version bump
         and look for hints that we want to "automatically" bump
