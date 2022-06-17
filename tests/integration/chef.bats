@@ -20,7 +20,7 @@ teardown() {
     scan_lines "0.0.1" "${lines[@]}"
 }
 
-@test "set an cookbook version" {
+@test "set a cookbook version" {
     avakas_wrapper set "$REPO" "0.0.2"
     scan_lines "Version set to 0.0.2" "${lines[@]}"
     avakas_wrapper show "$REPO"
@@ -28,7 +28,7 @@ teardown() {
     [ -e "$REPO/version" ]
 }
 
-@test "bump an cookbook version" {
+@test "bump a cookbook version" {
     avakas_wrapper bump "$REPO" patch
     scan_lines "Version updated from 0.0.1 to 0.0.2" "${lines[@]}"
     avakas_wrapper show "$REPO"

@@ -199,6 +199,7 @@ class Avakas():
         prerelease_len = len(prefix)
 
         current_prefix_match = starting_version.prerelease[:prerelease_len]
+
         extant_prereleases = self._get_extant_prerelease_versions(
             prefix, base_version=new_version,
             extant_versions=set([starting_version]))
