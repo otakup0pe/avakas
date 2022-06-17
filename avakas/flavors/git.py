@@ -2,8 +2,8 @@
 Avakas Built-In Base Project Flavor
 """
 
-import re
 import os
+import re
 
 from git import Repo
 
