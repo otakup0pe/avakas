@@ -96,6 +96,30 @@ teardown() {
     [ "$output" == "v0.0.2" ]
 }
 
+@test "autobump git-native version once with tag prefix and build info" {
+    cd $REPO
+    commit_message "$REPO" "initial commit!"
+    tag_repo "$REPO" 'v0.0.1' "latest"
+    commit_message "$REPO" "you're probably not gonna read this anyway\nbump:patch"
+    avakas_wrapper bump "$REPO" auto --tag-prefix "v" --flavor "git-native" --build-meta
+
+    REV=$(current_rev $REPO)
+    avakas_wrapper show "$REPO" --flavor "git-native" --tag-prefix "v"
+    [[ "$output" =~ ^v0\.0\.2\+${REV} ]]
+}
+
+# I'm not sure how to disable a test, this is for behaviour we want in the future
+#@test "autobump git-native version once with tag prefix, prerelease prefix, and build info" {
+#    cd $REPO
+#    commit_message "$REPO" "initial commit!"
+#    tag_repo "$REPO" 'v0.0.1' "latest"
+#    commit_message "$REPO" "you're probably not gonna read this anyway\nbump:minor"
+#    avakas_wrapper bump "$REPO" auto --tag-prefix "v" --prerelease-prefix "pre" --flavor "git-native" --build
+#    REV=$(current_rev $REPO)
+#    avakas_wrapper show "$REPO" --flavor "git-native" --tag-prefix "v"
+#    [[ "$output" =~ ^v0\.1\.0\-pre.0+${REV} ]]
+#}
+
 @test "autobump git-native versions multiple times" {
     cd $REPO
     commit_message "$REPO" "initial commit!"
