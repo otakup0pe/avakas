@@ -112,7 +112,7 @@ def cli_set_version(prerelease=False,
     project = add_metadata(project, **kwargs)
     project.write()
 
-    print("Version set to %s" % version)
+    print(f"Version set to {project.version}")
 
 
 def gen_arg_parser():
@@ -133,7 +133,7 @@ def gen_arg_parser():
 
     common.add_argument('--branch', dest='branch',
                         help='Branch to use when updating git',
-                        default='master')
+                        default='mainline')
 
     common.add_argument('--remote', dest='remote',
                         help='Git remote',
