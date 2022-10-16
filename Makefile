@@ -55,8 +55,8 @@ test_in_container_38: generate_testing_artifact
 test_in_containers: test_in_container_37 test_in_container_38
 
 clean:
-	# The touch and remove is because the setup.py depends on a file existing
-	# which isn't actually tracked in git
+# The touch and remove is because the setup.py depends on a file existing
+# which isn't actually tracked in git
 	touch version
 	rm -rf .bats-git .bats .ci-env avakas.egg-info dist build .coverage .tox
 	python setup.py clean

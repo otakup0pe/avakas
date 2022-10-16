@@ -8,7 +8,7 @@ except ImportError:
     sys.exit(1)
 
 def main():
-    version = '1.0.17'
+    version = '1.0.18'
 
     setup(name='avakas',
           version=version,
@@ -17,7 +17,7 @@ def main():
           author_email='jonafree@gmail.com',
           license='MIT',
           url='https://github.com/otakup0pe/avakas',
-          install_requires=['semantic_version', 'gitpython', 'erl_terms'],
+          install_requires=['semantic_version', 'gitpython'],
           packages=['avakas', 'avakas.flavors'],
           entry_points={
             'console_scripts': ['avakas = avakas.cli:main']

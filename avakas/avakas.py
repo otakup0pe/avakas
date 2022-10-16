@@ -27,13 +27,14 @@ def detect_project_flavor(**kwargs):
             project = Avakas.project_flavors['legacy']
         else:
             matched_names = [f.PROJECT_TYPE for f in matched]
-            raise AvakasError("Multiple project flavor matches: %s" %
-                              ", ".join(matched_names))
+            flavors = ', '.join(matched_names)
+            raise AvakasError(f"Multiple project flavor matches: %{flavors}")
+
     else:
         if flavor in Avakas.project_flavors:
             project = Avakas.project_flavors[flavor]
         else:
-            raise AvakasError('Unable to find flavor "%s"' % flavor)
+            raise AvakasError(f"Unable to find flavor {flavor}")
 
     return project(**kwargs)
 
@@ -54,7 +55,7 @@ class Avakas():
     def version(self):
         """Get version"""
 
-        return f'{self.tag_prefix or ""}{self._version}'
+        return f'{self.tag_prefix}{self._version}'
 
     @version.setter
     def version(self, version):
@@ -92,13 +93,11 @@ class Avakas():
 
         return copy.deepcopy(self._version)
 
-    @classmethod
-    def read(cls):
+    def read(self):
         """Read version data from a project"""
         return True
 
-    @classmethod
-    def write(cls):
+    def write(self):
         """Write version data to a project"""
 
     def bump(self,
@@ -234,7 +233,6 @@ class Avakas():
         self._version.prerelease += tuple(str(element) for element in prebuild)
 
         if build_date is not None and build_date:
-
             self._version.prerelease += (build_date,)
 
 

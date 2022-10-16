@@ -2,8 +2,8 @@
 Avakas Built-In Erlang Project Flavor
 """
 
+import re
 from glob import glob
-from erl_terms import decode as erl_decode
 
 from avakas.flavors.base import AvakasLegacy
 from avakas.avakas import register_flavor
@@ -20,34 +20,29 @@ class AvakasErlangProject(AvakasLegacy):
 
     @classmethod
     def guess_flavor(cls, directory):
-        return len(glob("%s/src/*.app.src" % directory)) == 1
+        return len(glob(f"{directory}/src/*.app.src")) == 1
 
     def read(self):
-        app_file = glob("%s/src/*.app.src" % self.directory)[0]
-        version_handle = open(app_file, 'r')
-        erl_terms = erl_decode(version_handle.read())
-        version_handle.close()
-        app_config = erl_terms[0][2]
-        erlang_version = None
-        for config in app_config:
-            if config[0] == 'vsn':
-                erlang_version = config[1]
+        app_file = glob(f"{self.directory}/src/*.app.src")[0]
+        with open(app_file, 'r', encoding='utf8') as version_handle:
+            app_data = version_handle.read()
+            version_handle.close()
+            vsn_regex = re.compile(r'^(.+vsn.+")(.+)(".+)$', re.MULTILINE)
+            if not vsn_regex(app_data):
+                raise AvakasError('Unable to determine Erlang version')
 
-        if not erlang_version:
-            raise AvakasError('Unable to determine Erlang version')
-
-        self.version = erlang_version
-        return erlang_version
+            self.version = vsn_regex[2]
+            return self.version
 
     def write(self):
-        app_file = glob("%s/src/*.app.src" % self.directory)[0]
-        app_handle = open(app_file, 'r')
-        lines, updated = match_and_rewrite_lines(r'(.+vsn.+")(.+)(".+)',
-                                                 app_handle, self.version)
-        app_handle.close()
-        if not updated:
-            raise AvakasError('Unable to save Erlang version')
+        app_file = glob(f"{self.directory}/src/*.app.src")[0]
+        with open(app_file, 'r', encoding='utf8') as app_handle:
+            lines, updated = match_and_rewrite_lines(r'(.+vsn.+")(.+)(".+)',
+                                                     app_handle, self.version)
+            app_handle.close()
+            if not updated:
+                raise AvakasError('Unable to save Erlang version')
 
-        app_handle = open(app_file, 'w')
-        app_handle.write(''.join(lines))
-        app_handle.close()
+            with open(app_file, 'w', encoding='utf8') as app_handle:
+                app_handle.write(''.join(lines))
+                app_handle.close()

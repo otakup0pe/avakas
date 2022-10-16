@@ -65,7 +65,7 @@ def cli_show_version(**kwargs):
     if not project.read():
         raise AvakasError('Unable to extract current version')
 
-    print("%s" % str(project.version))
+    print(str(project.version))
 
 
 def cli_bump_version(
@@ -87,8 +87,7 @@ def cli_bump_version(
     project = add_metadata(project, **kwargs)
     project.write()
 
-    print("Version updated from %s to %s" %
-          (old_version, str(project.version)))
+    print(f"Version updated from {old_version} to {str(project.version)}")
 
 
 def cli_set_version(prerelease=False,
@@ -224,7 +223,7 @@ def main():
         sys.exit(1)
 
     if args.operation == 'version':
-        print("avakas v%s" % my_version())
+        print(f"avakas v{my_version()}")
         sys.exit(0)
     elif args.operation == 'help':
         parser.print_help()
@@ -233,7 +232,7 @@ def main():
     directory = os.path.abspath(args.directory[0])
 
     if not os.path.exists(directory):
-        raise AvakasError("Directory %s does not exist." % directory)
+        raise AvakasError(f"Directory {directory} does not exist.")
 
     try:
         if args.operation == 'bump':
@@ -246,7 +245,7 @@ def main():
             parser.print_help()
             sys.exit(1)
     except AvakasError as err:
-        print("Problem: %s" % err.message, file=sys.stderr)
+        print(f"Problem: {err.message}", file=sys.stderr)
         sys.exit(1)
 
     sys.exit(0)

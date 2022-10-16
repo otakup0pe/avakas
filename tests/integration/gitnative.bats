@@ -166,13 +166,14 @@ teardown() {
     commit_message "$REPO" "hwhelp\nbump:minor"
 
     avakas_wrapper bump "$REPO" auto --flavor "git-native" --prerelease --prerelease-prefix 'beta'
-    avakas_wrapper show "$REPO"
+    [ "$output" == "Version updated from 0.0.2 to 0.1.0-beta.1" ]
+    avakas_wrapper show "$REPO" --flavor "git-native"
     [ "$output" == "0.1.0-beta.1" ]
 
     # No commits since last pre-release bump
     avakas_wrapper bump "$REPO" auto --flavor "git-native" --prerelease --prerelease-prefix 'beta'
     [ "$output" == "" ]
-    avakas_wrapper show "$REPO"
+    avakas_wrapper show "$REPO" --flavor "git-native"
     [ "$output" == "0.1.0-beta.1" ]
 }
 

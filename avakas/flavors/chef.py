@@ -20,12 +20,13 @@ class AvakasChefProject(AvakasLegacy):
 
     @classmethod
     def guess_flavor(cls, directory):
-        return os.path.exists("%s/metadata.rb" % directory)
+        return os.path.exists(f"{directory}/metadata.rb")
 
     def __read_metadata_file(self):
-        handle = open("%s/metadata.rb" % self.directory, 'r')
-        data = handle.read()
-        return data, handle
+        with open(f"{self.directory}/metadata.rb",
+                  'r', encoding='utf8') as handle:
+            data = handle.read()
+            return data, handle
 
     def read(self):
         """Extract the version from Chef Cookbook metadata"""
@@ -50,9 +51,10 @@ class AvakasChefProject(AvakasLegacy):
         if not updated:
             raise AvakasError('Unable to set version on metadata.rb')
 
-        handle = open("%s/metadata.rb" % self.directory, 'w')
-        handle.write(rewritten)
-        handle.close()
+        with open(f"{self.directory}/metadata.rb",
+                  'w', encoding='utf8') as handle:
+            handle.write(rewritten)
+            handle.close()
 
         self.write_versionfile()
 

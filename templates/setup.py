@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys
 
+# Reminder: Template Generated
 try:
     from setuptools import setup
 except ImportError:
@@ -17,7 +18,7 @@ def main():
           author_email='jonafree@gmail.com',
           license='MIT',
           url='https://github.com/otakup0pe/avakas',
-          install_requires=['semantic_version', 'gitpython', 'erl_terms'],
+          install_requires=['semantic_version', 'gitpython'],
           packages=['avakas', 'avakas.flavors'],
           entry_points={
             'console_scripts': ['avakas = avakas.cli:main']
