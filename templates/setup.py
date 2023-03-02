@@ -9,7 +9,7 @@ except ImportError:
     sys.exit(1)
 
 def main():
-    version = '1.0.18'
+    version = '@@VERSION@@'
 
     setup(name='avakas',
           version=version,

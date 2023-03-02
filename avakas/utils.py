@@ -16,6 +16,7 @@ from semantic_version import compare
 def stdout_redirect():
     """ Forcefully redirect stdout to stderr """
     # http://marc-abramowitz.com/archives/2013/07/19/python-context-manager-for-redirected-stdout-and-stderr/
+    oldstdchannel = None
     try:
         oldstdchannel = os.dup(sys.stdout.fileno())
         os.dup2(sys.stderr.fileno(), sys.stdout.fileno())
@@ -58,4 +59,5 @@ def my_version():
         return resource_string(__name__, 'version')
 
     return open(os.path.join(os.path.dirname(__file__),
-                             "..", "version")).read()
+                             "..", "version"),
+                encoding='utf8').read()

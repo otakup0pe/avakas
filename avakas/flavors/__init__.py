@@ -2,12 +2,12 @@
 Avakas Built-In Project Flavors
 """
 
-from .base import AvakasLegacy
-from .ansible import AvakasAnsibleProject
-from .chef import AvakasChefProject
-from .erlang import AvakasErlangProject
-from .git import AvakasGitNative
-from .node import AvakasNodeProject
+from avakas.flavors.base import AvakasLegacy
+from avakas.flavors.ansible import AvakasAnsibleProject
+from avakas.flavors.chef import AvakasChefProject
+from avakas.flavors.erlang import AvakasErlangProject
+from avakas.flavors.git import AvakasGitNative
+from avakas.flavors.node import AvakasNodeProject
 
 __all__ = [
     'AvakasAnsibleProject',

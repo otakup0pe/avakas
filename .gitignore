@@ -7,7 +7,7 @@ avakas.egg-info
 .bats*
 .ci-env
 .coverage
-version
+setup.py
 .tox
 .local
 .cache

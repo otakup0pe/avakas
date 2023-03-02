@@ -50,7 +50,8 @@ fake_repo() {
     local REPO="${AVAKAS_TEST_DIR}/briefcase-${BATS_TEST_NAME}-${RANDOM}"
     mkdir "${REPO}"
     cd "$REPO"
-    git init -q --initial-branch=mainline
+    git init -q
+    git checkout -b mainline
     config_repo "$REPO"
     local FILES="$(fake_file "$REPO")"
     FILES="${FILES} $(fake_file "$REPO")"
@@ -97,7 +98,7 @@ tag_repo() {
     local TAG="$2"
     local LATEST="$3"
     cd "$REPO"
-    if [[ -z "$LATEST" ]]; then 
+    if [[ -z "$LATEST" ]]; then
         local REV=$(random_rev "$REPO")
     else
         local REV=$(current_rev "$REPO")

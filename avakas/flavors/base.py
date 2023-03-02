@@ -42,19 +42,18 @@ class AvakasLegacy(Avakas):
         opt = self.options
         repo = Repo(self.directory, search_parent_directories=True)
         if not repo:
-            raise AvakasError("Unable to find associated git repo for %s." %
-                              self.directory)
+            raise AvakasError(f"Unable to find associated \
+            git repo for {self.directory}.")
 
         if opt['branch'] not in repo.heads:
-            raise AvakasError("Branch %s branch not found." % opt['branch'])
+            raise AvakasError(f"Branch {opt['branch']} branch not found.")
 
         if repo.active_branch != repo.heads[opt['branch']]:
-            print("Switching to %s branch" % opt['branch'],
-                  file=sys.stderr)
+            print(f"Switching to {opt['branch']} branch", file=sys.stderr)
             repo.heads[opt['branch']].checkout()
 
         if opt['remote'] not in [r.name for r in repo.remotes]:
-            raise AvakasError("Remote %s not found" % opt['remote'])
+            raise AvakasError(f"Remote {opt['remote']} not found")
 
         # we really do not want to be polluting our stdout when
         # showing the version
@@ -72,7 +71,7 @@ class AvakasLegacy(Avakas):
         resp = self.repo.remotes[opt['remote']].push()
         resp = resp[0]
         if resp.flags & 1024 or resp.flags & 32 or resp.flags & 16:
-            raise AvakasError("Unexpected git error: %s" % resp.summary)
+            raise AvakasError("Unexpected git error: {resp.summary}")
 
     def __commit_files(self):
         """Will commit and push the version file and optionally tags."""
@@ -80,7 +79,7 @@ class AvakasLegacy(Avakas):
 
         self.repo.index.add(self.commit_files)
         skip_hooks = not opt['with_hooks']
-        self.repo.index.commit("Version bumped to %s" % self.version,
+        self.repo.index.commit(f"Version bumped to {self.version}",
                                skip_hooks=skip_hooks)
 
     def __create_git_tag(self):
@@ -126,9 +125,9 @@ class AvakasLegacy(Avakas):
         """Write the version file"""
 
         path = os.path.join(self.directory, self.version_filename)
-        version_file = open(path, 'w')
-        version_file.write("%s\n" % self.version)
-        version_file.close()
+        with open(path, 'w', encoding='utf8') as version_file:
+            version_file.write(f"{self.version}\n")
+            version_file.close()
 
     def write_git(self):
         """Write data to git"""
@@ -170,10 +169,11 @@ class AvakasLegacy(Avakas):
         Get the version from the current project flavor
         """
         path = os.path.join(self.directory, self.version_filename)
-        version_file = open(path, 'r')
-        version_str = version_file.read()
-        self.version = version_str
-        version_file.close()
+        with open(path, 'r', encoding='utf8') as version_file:
+            version_str = version_file.read()
+            self.version = version_str
+            version_file.close()
+
         return True
 
     def write(self):

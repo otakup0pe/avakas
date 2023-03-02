@@ -24,4 +24,4 @@ class AvakasAnsibleProject(AvakasGitNative):
 
     @classmethod
     def guess_flavor(cls, directory):
-        return os.path.exists("%s/meta/main.yml" % directory)
+        return os.path.exists(f"{directory}/meta/main.yml")

@@ -52,8 +52,8 @@ class AvakasGitNative(Avakas):
         """Initializes our local git workspace."""
         repo = Repo(self.directory, search_parent_directories=True)
         if not repo:
-            raise AvakasError("Unable to find associated git repo for %s." %
-                              self.directory)
+            raise AvakasError(f"Unable to find associated git \
+            repo for {self.directory}")
 
         return repo
 
@@ -74,7 +74,7 @@ class AvakasGitNative(Avakas):
             resp = remote.push(tag)[0]
 
         if resp.flags & 1024 or resp.flags & 32 or resp.flags & 16:
-            raise AvakasError("Unexpected git error: %s" % resp.summary)
+            raise AvakasError(f"Unexpected git error: {resp.summary}")
 
     def __create_git_tag(self):
         """Creates a git tag"""
@@ -130,14 +130,15 @@ class AvakasGitNative(Avakas):
 
             if release_version is not None:
                 break
+
         return vsn
 
     def write_versionfile(self):
         """Write the version file"""
         path = os.path.join(self.directory, self.version_filename)
-        version_file = open(path, 'w')
-        version_file.write("%s\n" % self.version)
-        version_file.close()
+        with open(path, 'w', encoding='utf8') as version_file:
+            version_file.write(f"{self.version}\n")
+            version_file.close()
 
     def write_git(self):
         """Write data to git"""
@@ -170,6 +171,9 @@ class AvakasGitNative(Avakas):
             build_date=build_date)
 
     def read(self):
+        """
+        Get the version from git tag
+        """
         latest_tag = None
         commit_to_tags = {}
         for tag in self.repo.tags:
@@ -199,4 +203,3 @@ class AvakasGitNative(Avakas):
         Write version out to file
         """
         self.write_git()
-        self.write_versionfile()
