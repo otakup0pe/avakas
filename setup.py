@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys
 
+# Reminder: Template Generated
 try:
     from setuptools import setup
 except ImportError:
