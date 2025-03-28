@@ -18,7 +18,7 @@ def main():
           author_email='jonafree@gmail.com',
           license='MIT',
           url='https://github.com/otakup0pe/avakas',
-          install_requires=['semantic_version', 'gitpython'],
+          install_requires=['semantic_version==2.10.0', 'gitpython==3.1.44'],
           packages=['avakas', 'avakas.flavors'],
           entry_points={
             'console_scripts': ['avakas = avakas.cli:main']
