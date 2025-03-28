@@ -6,32 +6,29 @@ avakas
 
 # Overview
 
-This script provides a simple interface around viewing and manipulating project
-version metadata. It may be used to either bump, set, or view the version
-information for the project in a given directory. It is written with [semantic
+This script provides a simple interface around viewing and
+manipulating project version metadata. It may be used to either bump,
+set, or view the version information for the project in a given
+directory. It is written with [semantic
 versioning](http://semver.org/) in mind.
 
-It currently does it's best to determine whether the given directory contains a
-NodeJS, Erlang, Chef Cookbook, or Ansible project before just settling on
-keeping the version in a file named `version`. If a NodeJS project is discovered
-then the `package.json` will be edited. If an Ansible project is discovered then
-no files will be modified but the tags will still be handled. The Erlang
-detection is limited to OTP apps, and `avakas` will attempt to edit a rebar
-style `foo.app.src`. If a Chef Cookbook is discovered then `avakas` will attempt
-to modify the `version` attribute in `metadata.rb`.
+It currently does it's best to determine whether the given directory
+contains a NodeJS, or Ansible project before just settling on keeping
+the version in a file named `version`. If a NodeJS project is
+discovered then the `package.json` will be edited. If an Ansible
+project is discovered then no files will be modified but the tags will
+still be handled.
 
 The avakas tool makes a few assumptions
 
 * There is only one logical project in each directory.
-* The directory is somewhere in a git repository. You can have multiple projects
-  per repository by using the `--tag-prefix` option.
+* The directory is somewhere in a git repository. You can have
+  multiple projects per repository by using the `--tag-prefix` option.
 * For the protection of the user the git workspace must not be dirty.
 
 The avakas tool supports the following types of version files
 
 * NodeJS `package.json`
-* Erlang/OTP and rebar `foo.app.src`
-* Chef Cookbook `metadata.rb`
 * Ansible `meta/main.yml`
 * Plain ol' `version` file
 
@@ -40,19 +37,20 @@ The avakas tool supports the following types of version files
 
 ## show
 
-This mode will return the current version for a given project. The following
-will show the current Public API version. This operation supports an additional
-`--build` argument, which will cause it to extend the version set in source
-control with build-time metadata. It also supports the `--pre-build` argument,
-which does the same thing on top of the prerelease field, because all kinds of
-package management systems do not actually support the build semantic version
-component.
+This mode will return the current version for a given project. The
+following will show the current Public API version. This operation
+supports an additional `--build` argument, which will cause it to
+extend the version set in source control with build-time metadata. It
+also supports the `--pre-build` argument, which does the same thing on
+top of the prerelease field, because all kinds of package management
+systems do not actually support the build semantic version component.
 
 It is possible to override this default `pre-build` behavior. The
-`--pre-build-date` option will include the current date (down to the second) as
-a string. The `--pre-build-prefix=foo` option will include a string prefix. It
-is possible to include both pre-build _and_ build information, but only if you
-specify a prefix or include the date in prebuild.
+`--pre-build-date` option will include the current date (down to the
+second) as a string. The `--pre-build-prefix=foo` option will include
+a string prefix. It is possible to include both pre-build _and_ build
+information, but only if you specify a prefix or include the date in
+prebuild.
 
 ```shell
 avakas show $HOME/projects/hal9000
@@ -60,8 +58,8 @@ avakas show $HOME/projects/hal9000
 
 ## set
 
-This mode will set an explicit version. Note that the string must be a valid
-semantic version.
+This mode will set an explicit version. Note that the string must be a
+valid semantic version.
 
 ```shell
 avakas set $HOME/projects/hal9000 2.0.0
@@ -80,11 +78,12 @@ provided. It has four modes of operation.
 
 ### Autobump
 
-When the `auto` option is selected, the system will use hints in the git log
-since the last version bump to determine if the version should be changed. These
-hints can be specified at any point in the commit message. The hints are
-specified, prefixed by `bump:`. For example, the following commit message would
-result in a minor version bump if it is subsequently "autobumped".
+When the `auto` option is selected, the system will use hints in the
+git log since the last version bump to determine if the version should
+be changed. These hints can be specified at any point in the commit
+message. The hints are specified, prefixed by `bump:`. For example,
+the following commit message would result in a minor version bump if
+it is subsequently "autobumped".
 
 ```shell
 $ avakas show .
@@ -94,7 +93,10 @@ $ avakas bump . auto
 Version updated from 0.0.1 to 0.1.0
 ```
 
-Avakas can also rely on a default bump version to ensure every invocation of Avakas generates a bump build. If a bump hint is not detected within the commit history, the defined defualt-bump level will be used. This is useful for CI/CD systems.
+Avakas can also rely on a default bump version to ensure every
+invocation of Avakas generates a bump build. If a bump hint is not
+detected within the commit history, the defined defualt-bump level
+will be used. This is useful for CI/CD systems.
 
 ```shell
 avakas bump . auto --default-bump patch
@@ -105,11 +107,13 @@ avakas bump . auto --default-bump patch
 
 ## --tag-prefix
 
-A prefix to use with the version. Generally used for non-semantic version compliant v1.0 style version strings.
+A prefix to use with the version. Generally used for non-semantic
+version compliant v1.0 style version strings.
 
 ## --branch
 
-The authoritative mainline branch of your project. This is also used to compare for prereleases.
+The authoritative mainline branch of your project. This is also used
+to compare for prereleases.
 
 ## --remote
 
@@ -121,7 +125,7 @@ The filename to use for generating a version file.
 
 ## --flavor
 
-Flavor of project (Presently: legacy|chef|ansible|nodejs|erlang).
+Flavor of project (Presently: legacy|ansible|nodejs).
 
 ## --build-meta
 

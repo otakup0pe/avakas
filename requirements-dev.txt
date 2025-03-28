@@ -3,3 +3,5 @@ pylint
 nose
 loremipsum
 coverage
+setuptools
+tox

@@ -14,7 +14,7 @@ jobs:
     runs-on: "ubuntu-latest"
     strategy:
       matrix:
-        python-version: [3.7, 3.8]
+        python-version: [3.12, 3.13]
     steps:
       # These two conditional checkouts allow for getting all branches in a
       # pull request. I'm having trouble finding a source for these stanzas, but

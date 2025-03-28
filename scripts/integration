@@ -12,7 +12,7 @@ BATSGIT="${ROOTDIR}/.bats-git"
 BATSBIN="${ROOTDIR}/.bats"
 
 if [ ! -d "$BATSGIT" ] ; then
-    git clone --depth 1 https://github.com/sstephenson/bats.git "$BATSGIT"
+    git clone --depth 1 https://github.com/bats-core/bats-core.git "$BATSGIT"
 fi
 if [ ! -d "$BATSBIN" ] ; then
     cd "$BATSGIT"

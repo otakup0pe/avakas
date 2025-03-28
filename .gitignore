@@ -11,3 +11,4 @@ setup.py
 .tox
 .local
 .cache
+version

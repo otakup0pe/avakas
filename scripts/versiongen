@@ -13,7 +13,11 @@ problems() {
     exit 1
 }
 
-AVAKAS="${ROOTDIR}/avakas.py"
+AVAKAS="${ROOTDIR}/.ci-env/bin/avakas"
+
+if [ ! -e "$AVAKAS" ] ; then
+    problems "Cannot eat own dogfood; avakas not found in repo venv"
+fi
 
 VSN="$("$AVAKAS" show "$ROOTDIR" --flavor git-native 2> /dev/null)"
 
