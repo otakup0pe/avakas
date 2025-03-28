@@ -20,8 +20,6 @@ jobs:
         run: "make testenv"
       - name: "install avakas to version itself"
         run: "make install"
-      - name: "Get current version"
-        run: avakas show . --flavor "git-native"
       - name: "Build a package"
         run: "make package"
       - name: "Publish to pypi"
