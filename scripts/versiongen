@@ -27,9 +27,7 @@ else
     fi
 fi
 
-"$AVAKAS" show "$ROOTDIR" --flavor "git-native" --branch "origin/mainline"
-
-VSN="$("$AVAKAS" show "$ROOTDIR" --flavor git-native 2> /dev/null)"
+VSN="$("$AVAKAS" show "$ROOTDIR" --flavor git-native --branch "origin/mainline" 2> /dev/null)"
 
 if [ -z "$VSN" ] ; then
     problems "unable to determine version"
@@ -37,4 +35,4 @@ fi
 
 sed -e "s/@@VERSION@@/${VSN}/" < "${ROOTDIR}/templates/setup.py" > "${ROOTDIR}/setup.py"
 
-dbg "Generated files at version ${VSN}"
+dbg "Generated file(s) at version ${VSN}"
