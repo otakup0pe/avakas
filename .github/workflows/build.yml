@@ -14,7 +14,7 @@ jobs:
     runs-on: "ubuntu-latest"
     strategy:
       matrix:
-        python-version: [3.12, 3.13]
+        python-version: [3.10, 3.12]
     steps:
       # These two conditional checkouts allow for getting all branches in a
       # pull request. I'm having trouble finding a source for these stanzas, but
@@ -38,7 +38,7 @@ jobs:
       - name: "run tests"
         run: "make test"
       - name: "build container"
-        if: matrix.python-version == '3.8'
+        if: matrix.python-version == '3.12'
         uses: "docker/build-push-action@v1"
         with:
           push: false
@@ -54,7 +54,7 @@ jobs:
       - name: "Set up Python"
         uses: "actions/setup-python@v2"
         with:
-          python-version: "3.8"
+          python-version: "3.12"
       - name: "dat env tho"
         run: "make testenv"
       - name: "Maybe bump version"

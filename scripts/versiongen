@@ -15,8 +15,10 @@ problems() {
 
 AVAKAS="${ROOTDIR}/.ci-env/bin/avakas"
 
-if [ ! -e "$AVAKAS" ] ; then
+if [ -z "$CI" ] && [ ! -e "$AVAKAS" ] ; then
     problems "Cannot eat own dogfood; avakas not found in repo venv"
+elif [ -n "$CI" ] && ! command -v "avakas" &> /dev/null ; then
+    problems "Cannot eat own dogfood; avakas not found in PATH"
 fi
 
 VSN="$("$AVAKAS" show "$ROOTDIR" --flavor git-native 2> /dev/null)"
