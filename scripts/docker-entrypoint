@@ -1,14 +1,17 @@
 #!/usr/bin/env sh
 set -e
 
+SSH_KEY="/avakas-key"
+
 function problems {
     echo "Error: ${1}"
     exit 1
 }
+
 ACTION="$1"
 if [ -z "$ACTION" ] ; then
     echo "avakas docker container ${VERSION}"
-    avakas
+    avakas help
     exit 1
 fi
 
@@ -16,10 +19,12 @@ ARGS="$*"
 if [ "$ACTION" == "bump" ] || [ "$ACTION" == "set" ] ; then
     mkdir -p "${HOME}/.ssh"
     if [ -z "$SSH_AUTH_SOCK" ] ; then
-        if [ ! -e "/etc/avakas/id_rsa" ] ; then
-            problems "unable to find id_rsa"
+        if [ ! -e "$SSH_KEY" ] ; then
+            problems "SSH private key not found"
         else
-            cp "/etc/avakas/id_rsa" "${HOME}/.ssh/id_rsa"
+	    if ! grep -q "PRIVATE KEY" "$SSH_KEY" ; then
+		problems "SSH private key is corrupt"
+	    fi
         fi
     fi
     ssh-keyscan "$SSH_SCAN_HOST" 2> /dev/null 1> "${HOME}/.ssh/known_hosts" || problems "Unable to load git host key"
