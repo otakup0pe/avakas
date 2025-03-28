@@ -1,10 +1,10 @@
-.PHONY = all testenv install package test test_in_containers test_in_container_37 test_in_container_38 clean container version
+.PHONY = all testenv install package test test_in_containers test_in_container_312 test_in_container_313 clean container version
 
 HERE := $(shell pwd)
-HERE_OWNERSHIP := $(shell stat -c '%u:%g' $(HERE))
-FIX_OWNERSHIP := chown -R $(HERE_OWNERSHIP)
 
-SETUP_CONTAINER_FOR_TESTS := cd /src;pip install -r requirements.txt
+SETUP_CONTAINER_FOR_TESTS := cp -r /src /tmp/avakas && cd /tmp/avakas && \
+	rm -rf /tmp/avakas/.ci-env /tmp/avakas/.bats* && \
+	pip install -t /tmp/avakas/.ci-env -r requirements.txt -r requirements-dev.txt
 
 ifndef CI
 	CI_ENV=$(HERE)/.ci-env/bin/
@@ -12,7 +12,7 @@ endif
 
 all: test package
 
-testenv: version
+testenv:
 ifndef CI
 	echo "Outside CI"
 	test -d .ci-env || ( mkdir .ci-env && virtualenv -p python3 .ci-env) && .ci-env/bin/python3 -m pip install --upgrade pip
@@ -27,12 +27,12 @@ version:
 	./scripts/versiongen
 
 install: testenv
-	$(CI_ENV)python setup.py install
+	$(CI_ENV)python -m pip install $(shell pwd)
 
 package:
 	python setup.py sdist
 
-test: testenv install
+test: testenv version install
 	$(CI_ENV)coverage erase
 	$(CI_ENV)pycodestyle "avakas"
 	$(CI_ENV)pylint "avakas"
@@ -41,18 +41,18 @@ test: testenv install
 	test -z $(TRAVIS) && $(CI_ENV)coverage erase || true
 
 generate_testing_artifact: testenv
-	tox --sdistonly
+	$(CI_ENV)tox --sdistonly
 
-test_in_container_37: generate_testing_artifact
-	docker run -v "$(HERE):/src" python:3.7 bash -c '$(SETUP_CONTAINER_FOR_TESTS); tox -e py37;$(FIX_OWNERSHIP) /src'
+test_in_container_312: generate_testing_artifact
+	docker run -u nobody -v "$(HERE):/src" python:3.12 sh -c '$(SETUP_CONTAINER_FOR_TESTS) && PYTHONPATH=/tmp/avakas/.ci-env /tmp/avakas/.ci-env/bin/tox -e py312'
 
-test_in_container_38: generate_testing_artifact
-	docker run -v "$(HERE):/src" python:3.8 bash -c '$(SETUP_CONTAINER_FOR_TESTS);tox -e py38;$(FIX_OWNERSHIP) /src'
+test_in_container_310: generate_testing_artifact
+	docker run -u nobody -v "$(HERE):/src" python:3.10 sh -c '$(SETUP_CONTAINER_FOR_TESTS) && PYTHONPATH=/tmp/avakas/.ci-env /tmp/avakas/.ci-env/bin/tox -e py310'
 
 
 # Long term these versions should not be hardcoded, upon
 # viability of the tox-via-docker plugin, that should be used.
-test_in_containers: test_in_container_37 test_in_container_38
+test_in_containers: test_in_container_312 test_in_container_310
 
 clean:
 # The touch and remove is because the setup.py depends on a file existing

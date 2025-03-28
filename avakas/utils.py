@@ -7,7 +7,7 @@ import sys
 import os
 from functools import cmp_to_key
 import contextlib
-from pkg_resources import resource_string, resource_filename
+from importlib import metadata
 
 from semantic_version import compare
 
@@ -55,9 +55,4 @@ def my_version():
     """
     Returns the current version of avakas itself.
     """
-    if os.path.exists(resource_filename(__name__, 'version')):
-        return resource_string(__name__, 'version')
-
-    return open(os.path.join(os.path.dirname(__file__),
-                             "..", "version"),
-                encoding='utf8').read()
+    return metadata.version('avakas')

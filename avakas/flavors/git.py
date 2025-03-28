@@ -69,6 +69,7 @@ class AvakasGitNative(Avakas):
         if opt['remote'] not in [r.name for r in self.repo.remotes]:
             return
 
+        resp = None
         if tag:
             remote = self.repo.remote(name=opt['remote'])
             resp = remote.push(tag)[0]

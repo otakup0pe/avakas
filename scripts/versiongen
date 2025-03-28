@@ -13,9 +13,21 @@ problems() {
     exit 1
 }
 
-AVAKAS="${ROOTDIR}/avakas.py"
+declare AVAKAS
 
-VSN="$("$AVAKAS" show "$ROOTDIR" --flavor git-native 2> /dev/null)"
+if [ -z "$CI" ] ; then
+    AVAKAS="${ROOTDIR}/.ci-env/bin/avakas"
+    if [ ! -e "$AVAKAS" ] ; then
+	problems "Cannot eat own dogfood; avakas not found in repo venv"
+    fi
+else
+    AVAKAS="avakas"
+    if ! command -v "avakas" &> /dev/null ; then
+	problems "Cannot eat own dogfood; avakas not found in PATH"
+    fi
+fi
+
+VSN="$("$AVAKAS" show "$ROOTDIR" --flavor git-native --branch "origin/mainline" 2> /dev/null)"
 
 if [ -z "$VSN" ] ; then
     problems "unable to determine version"
@@ -23,4 +35,4 @@ fi
 
 sed -e "s/@@VERSION@@/${VSN}/" < "${ROOTDIR}/templates/setup.py" > "${ROOTDIR}/setup.py"
 
-dbg "Generated files at version ${VSN}"
+dbg "Generated file(s) at version ${VSN}"

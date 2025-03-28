@@ -72,11 +72,7 @@ class Avakas():
             try:
                 version = Version(version)
             except ValueError as err:
-                # Doing this to get around the linter, which seems like a
-                # hobgoblin, but couldn't figure out how to get the pylint
-                # hints to work
-                prefix = self.tag_prefix
-                msg = f"Invalid version string `{version}`,prefix={prefix}"
+                msg = f"Invalid version string `{version}`,prefix={self.tag_prefix}"  # noqa: E501
                 raise AvakasError(msg) from err
 
         self._version = version

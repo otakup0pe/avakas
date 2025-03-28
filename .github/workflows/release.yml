@@ -25,15 +25,15 @@ jobs:
       - name: "Build a package"
         run: "make package"
       - name: "Publish to pypi"
-        uses: "pypa/gh-action-pypi-publish@v1.3.1"
+        uses: "pypa/gh-action-pypi-publish@release/v1"
         with:
           user: "__token__"
           password: "${{ secrets.PYPI_TOKEN }}"
       - name: "Build and push docker bits"
         uses: "docker/build-push-action@v1"
         with:
-          username: "${{ secrets.DOCKER_USER }}"
-          password: "${{ secrets.DOCKER_PASSWORD }}"
+          username: "${{ github.REPOSITORY_OWNER }}"
+          password: "${{ secrets.DOCKER_TOKEN }}"
           repository: "otakup0pe/avakas"
           tag_with_ref: true
           tags: "latest"
