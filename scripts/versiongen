@@ -27,7 +27,7 @@ else
     fi
 fi
 
-"$AVAKAS" show "$ROOTDIR" --flavor git-native
+"$AVAKAS" show "$ROOTDIR" --flavor "git-native" --branch "origin/mainline"
 
 VSN="$("$AVAKAS" show "$ROOTDIR" --flavor git-native 2> /dev/null)"
 
