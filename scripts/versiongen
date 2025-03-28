@@ -21,14 +21,13 @@ if [ -z "$CI" ] ; then
 	problems "Cannot eat own dogfood; avakas not found in repo venv"
     fi
 else
-    set -x
     AVAKAS="avakas"
     if ! command -v "avakas" &> /dev/null ; then
 	problems "Cannot eat own dogfood; avakas not found in PATH"
     fi
 fi
 
-avakas --help
+"$AVAKAS" show "$ROOTDIR" --flavor git-native
 
 VSN="$("$AVAKAS" show "$ROOTDIR" --flavor git-native 2> /dev/null)"
 
