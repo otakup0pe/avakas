@@ -56,4 +56,8 @@ jobs:
             mkdir -p ~/.ssh/
             ssh-keyscan github.com >> ~/.ssh/known_hosts
             make install
+            ./scripts/versiongen
+            git add setup.py
+            git commit -m "Bumping version to $(avakas show .)"
+            git push origin mainline
             avakas bump . auto --branch=mainline --default-bump patch --flavor "git-native"
