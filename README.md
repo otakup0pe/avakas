@@ -1,7 +1,7 @@
 avakas
 ======
 
-[![PyPI](https://img.shields.io/pypi/v/avakas.svg)](https://pypi.python.org/pypi/avakas)[![Maintenance](https://img.shields.io/maintenance/yes/2021.svg)]()
+[![PyPI](https://img.shields.io/pypi/v/avakas.svg)](https://pypi.python.org/pypi/avakas)[![Maintenance](https://img.shields.io/maintenance/yes/2025.svg)]()
 
 
 # Overview
@@ -53,7 +53,7 @@ information, but only if you specify a prefix or include the date in
 prebuild.
 
 ```shell
-avakas show $HOME/projects/hal9000
+$ avakas show $HOME/projects/hal9000
 ```
 
 ## set
@@ -62,7 +62,7 @@ This mode will set an explicit version. Note that the string must be a
 valid semantic version.
 
 ```shell
-avakas set $HOME/projects/hal9000 2.0.0
+$ avakas set $HOME/projects/hal9000 2.0.0
 ```
 
 ## bump
@@ -99,7 +99,7 @@ detected within the commit history, the defined defualt-bump level
 will be used. This is useful for CI/CD systems.
 
 ```shell
-avakas bump . auto --default-bump patch
+$ avakas bump . auto --default-bump patch
 ```
 
 
