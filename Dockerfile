@@ -15,6 +15,6 @@ RUN mkdir "/etc/avakas"
 ADD . /tmp/avakas
 ADD scripts/docker-entrypoint /usr/local/bin/docker-entrypoint
 
-RUN cd /tmp/avakas && python setup.py install && cd /tmp && rm -rf /tmp/avakas
+RUN cd /tmp/avakas && pip install /tmp/avakas && cd /tmp && rm -rf /tmp/avakas
 
 ENTRYPOINT ["docker-entrypoint"]
