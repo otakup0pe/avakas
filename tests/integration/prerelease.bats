@@ -15,6 +15,18 @@ teardown() {
     shared_teardown
 }
 
+almost() {
+    # almost not quite good enough. also try the "last" minute
+    # see https://github.com/otakup0pe/avakas/issues/88 for context
+    local ALMOST="$(TZ='UTC' date "+%Y%m%d%H%M")"
+    local MINUTE="${ALMOST: -2}"
+    local TAIL="(${MINUTE}|$((10#$MINUTE - 1)))"
+    if [ "$MINUTE" == "00" ] ; then
+	TAIL="[${MINUTE}|59]"
+    fi
+    echo "${ALMOST:0:-2}${TAIL}"
+}
+
 @test "bump a prerelease prefix" {
     avakas_wrapper bump "$REPO" patch --prerelease --prerelease-prefix=alpha
     avakas_wrapper show "$REPO"
@@ -68,11 +80,12 @@ teardown() {
 
 @test "bump a prerelease w/date" {
     avakas_wrapper bump "$REPO" patch --prerelease --prerelease-date
-    ALMOST="$(TZ='UTC' date "+%Y%m%d%H%M")"
-    
+    ALMOST="$(almost)"
+
+    echo "AAAA ${ALMOST}"
     # Verify the 'bump' output
     [[ "$output" =~ ^Version.*updated.*0\.0\.0.*0\.0\.1-1\.${ALMOST} ]]
-    
+
     # Verify the set version
     avakas_wrapper show "$REPO"
     [[ "$output" =~  ^0.0.1-1.${ALMOST}[0-9]{2}$ ]]
@@ -81,18 +94,18 @@ teardown() {
 
 @test "set a prerelease w/date" {
     avakas_wrapper set "$REPO" 1.2.3 --prerelease --prerelease-date
-    ALMOST="$(TZ='UTC' date "+%Y%m%d%H%M")"
+    ALMOST="$(almost)"
     avakas_wrapper show "$REPO"
 
     # Will only show on errors
     echo "'${output}' does not match the expected '^1.2.3\-1.${ALMOST}[0-9]{2}$'"
-    [[ "$output" =~ ^1.2.3\-1.${ALMOST}[0-9]{2}$ ]]    
+    [[ "$output" =~ ^1.2.3\-1.${ALMOST}[0-9]{2}$ ]]
 }
 
 @test "bump a prerelease w/date and git build" {
   REV=$(current_rev $REPO)
     avakas_wrapper bump "$REPO" patch --prerelease  --prerelease-date --build
-    ALMOST="$(TZ='UTC' date "+%Y%m%d%H%M")"
+    ALMOST="$(almost)"
 
     avakas_wrapper show "$REPO"
     [[ "$output" =~  ^0.0.1-1.${ALMOST}[0-9]{2}\+${REV}$ ]]
@@ -102,8 +115,8 @@ teardown() {
     export BUILD_NUMBER=1
     REV=$(current_rev $REPO)
     avakas_wrapper bump "$REPO" patch --prerelease --prerelease-date --build
-    ALMOST="$(TZ='UTC' date "+%Y%m%d%H%M")"
-    
+    ALMOST="$(almost)"
+
     avakas_wrapper show "$REPO"
     [[ "$output" =~  ^0.0.1-1.${ALMOST}[0-9]{2}\+${REV}\.1$ ]]
 
@@ -114,8 +127,8 @@ teardown() {
     export TRAVIS_BUILD_NUMBER=1
     REV=$(current_rev $REPO)
     avakas_wrapper bump "$REPO" patch --prerelease --prerelease-date --build
-    ALMOST="$(TZ='UTC' date "+%Y%m%d%H%M")"
-    
+    ALMOST="$(almost)"
+
     avakas_wrapper show "$REPO"
     [[ "$output" =~  ^0.0.1-1.${ALMOST}[0-9]{2}\+${REV}\.${TRAVIS_BUILD_NUMBER}$ ]]
 
@@ -126,8 +139,8 @@ teardown() {
     export CIRCLE_BUILD_NUM=1
     REV=$(current_rev $REPO)
     avakas_wrapper bump "$REPO" patch --prerelease --prerelease-date --build
-    ALMOST="$(TZ='UTC' date "+%Y%m%d%H%M")"
-   
+    ALMOST="$(almost)"
+
     avakas_wrapper show "$REPO"
     [[ "$output" =~  ^0.0.1-1.${ALMOST}[0-9]{2}\+${REV}\.${CIRCLE_BUILD_NUM}$ ]]
 
@@ -139,8 +152,8 @@ teardown() {
     export GITHUB_RUN_NUMBER=1
     REV=$(current_rev $REPO)
     avakas_wrapper bump "$REPO" patch --prerelease --prerelease-date --build
-    ALMOST="$(TZ='UTC' date "+%Y%m%d%H%M")"
-    
+    ALMOST="$(almost)"
+
     avakas_wrapper show "$REPO"
     [[ "$output" =~  ^0.0.1-1.${ALMOST}[0-9]{2}\+${REV}\.${GITHUB_RUN_ID}\.${GITHUB_RUN_NUMBER}$ ]]
 
@@ -150,8 +163,8 @@ teardown() {
 
 @test "bump a prerelease w/prefix and date" {
     avakas_wrapper bump "$REPO" patch --prerelease --prerelease-date --prerelease-prefix=alpha
-    ALMOST="$(TZ='UTC' date "+%Y%m%d%H%M")"
-    
+    ALMOST="$(almost)"
+
     avakas_wrapper show "$REPO"
     [[ "$output" =~  ^0.0.1-alpha.1.${ALMOST}[0-9]{2}$ ]]
 }
@@ -170,10 +183,10 @@ teardown() {
     REV=$(current_rev $REPO)
     avakas_wrapper bump "$REPO" patch --prerelease --prerelease-date --prerelease-prefix=alpha --build
     ALMOST="$(TZ='UTC' date "+%Y%m%d%H%M")"
-    
+
     avakas_wrapper show "$REPO"
     [[ "$output" =~  ^0.0.1-alpha.1.${ALMOST}[0-9]{2}\+${REV}\.${BUILD_NUMBER}$ ]]
-    
+
     unset BUILD_NUMBER
 }
 
@@ -182,10 +195,10 @@ teardown() {
     REV=$(current_rev $REPO)
     avakas_wrapper bump "$REPO" patch --prerelease --prerelease-date --prerelease-prefix=alpha --build
     ALMOST="$(TZ='UTC' date "+%Y%m%d%H%M")"
-   
+
     avakas_wrapper show "$REPO"
     [[ "$output" =~  ^0.0.1-alpha.1.${ALMOST}[0-9]{2}\+${REV}\.1$ ]]
-    
+
     unset TRAVIS_BUILD_NUMBER
 }
 
@@ -194,10 +207,10 @@ teardown() {
     REV=$(current_rev $REPO)
     avakas_wrapper bump "$REPO" patch --prerelease --prerelease-date --prerelease-prefix=alpha --build
     ALMOST="$(TZ='UTC' date "+%Y%m%d%H%M")"
-   
+
     avakas_wrapper show "$REPO"
     [[ "$output" =~  ^0.0.1-alpha.1.${ALMOST}[0-9]{2}\+${REV}\.${CIRCLE_BUILD_NUM}$ ]]
-    
+
     unset CIRCLE_BUILD_NUM
 }
 
@@ -207,7 +220,7 @@ teardown() {
     REV=$(current_rev $REPO)
     avakas_wrapper bump "$REPO" patch --prerelease --prerelease-date --prerelease-prefix=alpha --build
     ALMOST="$(TZ='UTC' date "+%Y%m%d%H%M")"
-    
+
     avakas_wrapper show "$REPO"
     [[ "$output" =~  ^0.0.1-alpha.1.${ALMOST}[0-9]{2}\+${REV}\.${GITHUB_RUN_ID}\.${GITHUB_RUN_NUMBER}$ ]]
     unset GITHUB_RUN_ID
