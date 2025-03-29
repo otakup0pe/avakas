@@ -53,13 +53,13 @@ jobs:
             git config user.name "An Automaton"
             mkdir -p ~/.ssh/
             make install
-            ./scripts/versiongen
-            git add setup.py
             git remote set-url origin "$(git config --get remote.origin.url | sed 's#http.*com/#git@github.com:#g')"
             eval `ssh-agent -t 300 -s`
             ssh-add - <<< "${{secrets.DEPLOY_KEY}}"
             ssh-keyscan github.com >> ~/.ssh/known_hosts
             avakas bump . auto --branch=mainline --default-bump patch --flavor "git-native"
+            ./scripts/versiongen
+            git add setup.py
             git commit -m "Bumping version to $(avakas show .)"
             git push origin mainline
             ssh-agent -k
