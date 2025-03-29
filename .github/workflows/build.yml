@@ -59,7 +59,7 @@ jobs:
             eval `ssh-agent -t 300 -s`
             ssh-add - <<< "${{secrets.DEPLOY_KEY}}"
             ssh-keyscan github.com >> ~/.ssh/known_hosts
+            avakas bump . auto --branch=mainline --default-bump patch --flavor "git-native"
             git commit -m "Bumping version to $(avakas show .)"
             git push origin mainline
-            avakas bump . auto --branch=mainline --default-bump patch --flavor "git-native"
             ssh-agent -k
