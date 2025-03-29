@@ -35,4 +35,4 @@ if [ -e "/etc/avakas/avakasrc" ] ; then
     # shellcheck disable=SC1091
     source /etc/avakas/avakasrc
 fi
-/usr/local/bin/avakas $ARGS
+/opt/avakas/bin/avakas $ARGS
