@@ -1,7 +1,10 @@
 avakas
 ======
 
-[![PyPI](https://img.shields.io/pypi/v/avakas.svg)](https://pypi.python.org/pypi/avakas)[![Maintenance](https://img.shields.io/maintenance/yes/2025.svg)]()
+[![PyPI](https://img.shields.io/pypi/v/avakas.svg)](https://pypi.python.org/pypi/avakas)
+[![Docker Image Version](https://img.shields.io/docker/v/otakup0pe/avakas)](https://hub.docker.com/r/otakup0pe/avakas)
+[![Maintenance](https://img.shields.io/maintenance/yes/2025.svg)](https://zombo.com)
+[![GitHub License](https://img.shields.io/github/license/otakup0pe/avakas)](https://github.com/otakup0pe/avakas/blob/mainline/LICENSE)
 
 
 # Overview
@@ -9,8 +12,8 @@ avakas
 This script provides a simple interface around viewing and
 manipulating project version metadata. It may be used to either bump,
 set, or view the version information for the project in a given
-directory. It is written with [semantic
-versioning](http://semver.org/) in mind.
+directory. It is written with [semantic versioning](http://semver.org/)
+in mind.
 
 It currently does it's best to determine whether the given directory
 contains a NodeJS, or Ansible project before just settling on keeping
@@ -31,7 +34,6 @@ The avakas tool supports the following types of version files
 * NodeJS `package.json`
 * Ansible `meta/main.yml`
 * Plain ol' `version` file
-
 
 # Operations
 
@@ -208,7 +210,6 @@ generates a coverage report from the integration tests.
 # License
 
 [MIT](https://github.com/otakup0pe/avakas/blob/mainline/LICENSE)
-
 
 # Author(s)
 
