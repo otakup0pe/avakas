@@ -1,7 +1,7 @@
 avakas
 ======
 
-[![PyPI](https://img.shields.io/pypi/v/avakas.svg)](https://pypi.python.org/pypi/avakas)[![Maintenance](https://img.shields.io/maintenance/yes/2025.svg)]()
+[![PyPI](https://img.shields.io/pypi/v/avakas.svg)](https://pypi.python.org/pypi/avakas)[![Maintenance](https://img.shields.io/maintenance/yes/2026.svg)]()
 
 
 # Overview
@@ -208,7 +208,6 @@ generates a coverage report from the integration tests.
 # License
 
 [MIT](https://github.com/otakup0pe/avakas/blob/mainline/LICENSE)
-
 
 # Author(s)
 

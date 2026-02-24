@@ -2,8 +2,9 @@
 set -e
 
 SSH_KEY="/avakas-key"
+AVAKAS="/opt/avakas/bin/avakas"
 
-function problems {
+problems() {
     echo "Error: ${1}"
     exit 1
 }
@@ -11,12 +12,12 @@ function problems {
 ACTION="$1"
 if [ -z "$ACTION" ] ; then
     echo "avakas docker container ${VERSION}"
-    avakas help
+    "$AVAKAS" help
     exit 1
 fi
 
 ARGS="$*"
-if [ "$ACTION" == "bump" ] || [ "$ACTION" == "set" ] ; then
+if [ "$ACTION" = "bump" ] || [ "$ACTION" = "set" ] ; then
     mkdir -p "${HOME}/.ssh"
     if [ -z "$SSH_AUTH_SOCK" ] ; then
         if [ ! -e "$SSH_KEY" ] ; then
@@ -33,6 +34,6 @@ fi
 
 if [ -e "/etc/avakas/avakasrc" ] ; then
     # shellcheck disable=SC1091
-    source /etc/avakas/avakasrc
+    . /etc/avakas/avakasrc
 fi
-/opt/avakas/bin/avakas $ARGS
+"$AVAKAS" $ARGS

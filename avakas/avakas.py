@@ -12,7 +12,7 @@ from avakas.errors import AvakasError
 
 def detect_project_flavor(**kwargs):
     """
-    Determines the project flavor for a given directory
+    Detect the project flavor for a given directory.
     """
 
     flavor = kwargs.get('flavor', 'auto')
