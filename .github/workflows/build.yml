@@ -38,7 +38,7 @@ jobs:
           push: false
           tags: "otakup0pe/avakas:test"
   maybe_bump:
-    if: ${{ github.ref == 'refs/heads/mainline' && github.event_name == 'push' && ! startsWith(github.event.head_commit.message, 'Bumping version to')}}
+    if: ${{ github.ref == 'refs/heads/mainline' && github.event_name == 'push' && ! startsWith(github.event.head_commit.message, 'Version bumped to')}}
     runs-on: "ubuntu-latest"
     permissions:
       contents: write
@@ -64,7 +64,4 @@ jobs:
             ssh-add - <<< "${{secrets.DEPLOY_KEY}}"
             ssh-keyscan github.com >> ~/.ssh/known_hosts
             avakas bump . auto --branch=mainline --default-bump patch --flavor "pep621"
-            git add pyproject.toml
-            git commit -m "Bumping version to $(avakas show . --flavor pep621)"
-            git push origin mainline
             ssh-agent -k
