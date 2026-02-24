@@ -1,7 +1,7 @@
 pycodestyle
 pylint
 nose
-loremipsum
+lorem-text
 coverage
 setuptools
 tox

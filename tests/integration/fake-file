@@ -2,20 +2,14 @@
 
 import sys
 from random import randint
-from loremipsum import generate_paragraph
+from lorem_text import lorem
 
 def main(path):
     """Dat entrypoint tho"""
-    paragraphs = randint(0, 5)
-    words = ''
-    i = 0
-    while i <= paragraphs:
-        paragraph = generate_paragraph()[2]
-        words += paragraph
-        i += 1
-    fp = open(path, 'w')
-    fp.write(words)
-    fp.close
+    paragraphs = randint(1, 5)
+    words = lorem.paragraphs(paragraphs)
+    with open(path, 'w') as fp:
+        fp.write(words)
     exit(0)
 
 if __name__ == '__main__':
