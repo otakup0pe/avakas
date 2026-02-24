@@ -19,10 +19,8 @@ jobs:
         uses: "actions/setup-python@v5"
         with:
           python-version: "3.12"
-      - name: "install testenv"
+      - name: "install build deps"
         run: "make testenv"
-      - name: "install avakas to version itself"
-        run: "make install"
       - name: "Build a package"
         run: "make package"
       - name: "Publish to pypi"
