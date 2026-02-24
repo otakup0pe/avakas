@@ -1,4 +1,4 @@
-.PHONY = all testenv install package test test_in_containers test_in_container_312 test_in_container_313 clean container version
+.PHONY = all testenv install package test test_in_containers test_in_container_312 test_in_container_313 clean container
 
 HERE := $(shell pwd)
 
@@ -24,16 +24,13 @@ ifdef CI
 	pip install -r requirements.txt -r requirements-dev.txt
 endif
 
-version:
-	./scripts/versiongen
-
 install: testenv
 	$(CI_ENV)python -m pip install $(shell pwd)
 
 package:
-	python setup.py sdist
+	$(CI_ENV)python -m build
 
-test: testenv version install
+test: testenv install
 	$(CI_ENV)coverage erase
 	$(CI_ENV)pycodestyle "avakas"
 	$(CI_ENV)pylint "avakas"
@@ -56,12 +53,7 @@ test_in_container_310: generate_testing_artifact
 test_in_containers: test_in_container_312 test_in_container_310
 
 clean:
-# The touch and remove is because the setup.py depends on a file existing
-# which isn't actually tracked in git
-	touch version
 	rm -rf .bats-git .bats .ci-env avakas.egg-info dist build .coverage .tox
-	python setup.py clean
-	rm version
 
 distclean: clean
 	rm -rf .bats-git .ci-env

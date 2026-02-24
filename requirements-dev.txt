@@ -4,4 +4,5 @@ nose
 lorem-text
 coverage
 setuptools
+build
 tox
