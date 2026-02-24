@@ -209,7 +209,6 @@ generates a coverage report from the integration tests.
 
 [MIT](https://github.com/otakup0pe/avakas/blob/mainline/LICENSE)
 
-
 # Author(s)
 
 The avakas tool was created by [Jonathan Freedman](http://jonathanfreedman.bio/)
