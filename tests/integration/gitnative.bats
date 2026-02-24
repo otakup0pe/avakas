@@ -29,6 +29,13 @@ teardown() {
     [ -e "$REPO/version" ]
 }
 
+@test "show a git-native version with tag prefix stripped" {
+    commit_message "$REPO" "whorp\nbump:minor"
+    tag_repo "$REPO" "v0.0.1" "latest"
+    avakas_wrapper show "$REPO" --flavor="git-native" --tag-prefix "v" --strip-prefix
+    scan_lines "0.0.1" "${lines[@]}"
+}
+
 @test "ignore non-version tags on autobump" {
     avakas_wrapper  set "$REPO" --flavor "git-native" "1.0.0"
 

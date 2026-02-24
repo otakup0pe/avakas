@@ -107,6 +107,10 @@ def cli_show_version(**kwargs):
         mod_version.build = None
 
     project.version = mod_version
+
+    if kwargs['strip_prefix']:
+        project.tag_prefix = ''
+
     print(str(project.version))
 
 
@@ -250,6 +254,10 @@ def gen_arg_parser():
     show_p = subparsers.add_parser('show',
                                    parents=[common, meta],
                                    help='show current project version')
+    show_p.add_argument('--strip-prefix',
+                        help='Do not include tag prefix in output',
+                        action='store_true',
+                        default=False)
     show_p.add_argument('--strip-prerelease',
                         help='Do not include prerelease information',
                         action='store_true',
