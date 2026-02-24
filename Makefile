@@ -2,8 +2,9 @@
 
 HERE := $(shell pwd)
 
-SETUP_CONTAINER_FOR_TESTS := cp -r /src /tmp/avakas && cd /tmp/avakas && \
-	rm -rf /tmp/avakas/.ci-env /tmp/avakas/.bats* && \
+SETUP_CONTAINER_FOR_TESTS := mkdir -p /tmp/avakas && \
+	tar -c --exclude=.git --exclude=.ci-env --exclude='.bats*' -C /src . | tar -x -C /tmp/avakas && \
+	cd /tmp/avakas && \
 	pip install -t /tmp/avakas/.ci-env -r requirements.txt -r requirements-dev.txt
 
 ifndef CI

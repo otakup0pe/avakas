@@ -8,13 +8,15 @@ LABEL license="MIT"
 LABEL version="${VERSION}"
 LABEL maintainer="Jonathan Freedman <jonafree@gmail.com>"
 
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
 RUN apk add --no-cache git openssh
 
 COPY . /tmp/avakas
 COPY scripts/docker-entrypoint /usr/local/bin/docker-entrypoint
 
-RUN pip install --upgrade pip && pip install virtualenv && virtualenv /opt/avakas && \
-    /opt/avakas/bin/pip install /tmp/avakas && \
+RUN uv venv /opt/avakas && \
+    uv pip install --python /opt/avakas/bin/python /tmp/avakas && \
     rm -rf /tmp/avakas
 
 ENTRYPOINT ["docker-entrypoint"]
