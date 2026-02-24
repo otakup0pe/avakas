@@ -1,9 +1,7 @@
-"""avakas
+"""Avakas: A tool for managing semantic versioning in software projects.
 
-The avakas tool is meant as an interface around version
-metadata for assorted flavours of software projects.
-
-For more information see https://github.com/otakup0pe/avakas
+Avakas provides a command-line interface to manage version numbers in various
+types of software projects (known as "flavors").
 """
 
 from __future__ import print_function
@@ -20,19 +18,47 @@ from .utils import my_version
 
 
 def get_repo(directory):
-    """Load the git repository."""
+    """Load the git repository from a given directory.
+
+            Args:
+                directory (str): The path to the project directory. The
+                    function will search this directory and its parents for
+                    a git repository.
+
+            Returns:
+                git.Repo: The loaded git repository object.
+            """
     return Repo(directory, search_parent_directories=True)
 
 
 def git_rev(directory):
-    """Returns the first eight characters of HEAD"""
+    """Get the short commit hash of the current HEAD.
+
+            Args:
+                directory (str): The path to the directory containing the git
+                    repository.
+
+            Returns:
+                str: The first eight characters of the HEAD commit hash.
+            """
     return str(get_repo(directory).head.commit)[0:8]
 
 
 def add_metadata(project, buildmeta=False, **kwargs):
-    """
-    Add metadata for set/bump actions
-    """
+    """Add build metadata to the project's version.
+
+            This function adds the git commit hash and, optionally, CI build
+            information to the version string.
+
+            Args:
+                project (Avakas): The Avakas project instance.
+                buildmeta (bool): If True, add CI build metadata.
+                **kwargs: Additional arguments, including
+                          the project directory.
+
+            Returns:
+                Avakas: The modified project instance.
+            """
     directory = kwargs['directory'][0]
 
     git_str = str(git_rev(directory))
@@ -65,6 +91,22 @@ def cli_show_version(**kwargs):
     if not project.read():
         raise AvakasError('Unable to extract current version')
 
+    if kwargs['prerelease']:
+        project.make_prerelease(0,
+                                kwargs['prerelease_prefix'],
+                                kwargs['prerelease_date'])
+
+    mod_version = project.version_obj
+    if kwargs['prerelease'] and kwargs['strip_prerelease']:
+        raise AvakasError('cannot specify prerelease and strip-prerelease')
+
+    if kwargs['strip_prerelease']:
+        mod_version.prerelease = None
+
+    if kwargs['strip_build']:
+        mod_version.build = None
+
+    project.version = mod_version
     print(str(project.version))
 
 
@@ -153,10 +195,6 @@ def gen_arg_parser():
                         help='Directory of the project', default=os.getcwd())
 
     writable = argparse.ArgumentParser(add_help=False)
-    writable.add_argument('--build-meta', dest='buildmeta',
-                          help='Apply build-meta to version',
-                          action='store_true',
-                          default=False)
     writable.add_argument('--skip-dirty', dest='skipdirty',
                           help='Skip checking if local repo is dirty',
                           action='store_true',
@@ -171,31 +209,37 @@ def gen_arg_parser():
                           dest='dry',
                           help='Will not push to git',
                           action='store_true')
-    writable.add_argument('--prerelease',
-                          dest='prerelease',
-                          help='Will include prebuild information. If '
-                          ' no other prebuild options are specified '
-                          ' then it will simply use the build info in place.',
-                          action='store_true')
-    writable.add_argument('--prerelease-date',
-                          dest='prerelease_date',
-                          help='Include a string representation of the '
-                          'current date, down to the second, as part '
-                          'of the prebuild.',
-                          action='store_true')
-    writable.add_argument('--prerelease-prefix',
-                          dest='prerelease_prefix',
-                          help='Use the given string as a prebuild prefix',
-                          default=None)
+
+    meta = argparse.ArgumentParser(add_help=False)
+    meta.add_argument('--prerelease',
+                      dest='prerelease',
+                      help='Will include pre-release information. If '
+                      ' no other pre-release options are specified '
+                      ' then it will simply use the build info in place.',
+                      action='store_true')
+    meta.add_argument('--prerelease-date',
+                      dest='prerelease_date',
+                      help='Include a string representation of the '
+                      'current date, down to the second, as part '
+                      'of the pre-release.',
+                      action='store_true')
+    meta.add_argument('--prerelease-prefix',
+                      dest='prerelease_prefix',
+                      help='Use the given string as a pre-release prefix',
+                      default=None)
+    meta.add_argument('--build-meta', dest='buildmeta',
+                      help='Apply build-meta to version',
+                      action='store_true',
+                      default=False)
 
     set_p = subparsers.add_parser('set',
-                                  parents=[common, writable],
+                                  parents=[common, writable, meta],
                                   help='explicitly set new version')
     set_p.add_argument('version', nargs=1,
                        help='Desired version to set')
 
     bump_p = subparsers.add_parser('bump',
-                                   parents=[common, writable],
+                                   parents=[common, writable, meta],
                                    help='bump version')
     bump_p.add_argument('level', nargs=1, choices=bump_levels,
                         help='Level to bump at', default='auto')
@@ -203,9 +247,17 @@ def gen_arg_parser():
                         choices=bump_levels, help='Level to bump at',
                         default=None)
 
-    subparsers.add_parser('show',
-                          parents=[common],
-                          help='show current project version')
+    show_p = subparsers.add_parser('show',
+                                   parents=[common, meta],
+                                   help='show current project version')
+    show_p.add_argument('--strip-prerelease',
+                        help='Do not include prerelease information',
+                        action='store_true',
+                        default=False)
+    show_p.add_argument('--strip-build',
+                        help='Do not include build information',
+                        action='store_true',
+                        default=False)
 
     subparsers.add_parser('version')
     subparsers.add_parser('help')

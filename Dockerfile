@@ -8,10 +8,10 @@ LABEL license="MIT"
 LABEL version="${VERSION}"
 LABEL maintainer="Jonathan Freedman <jonafree@gmail.com>"
 
-RUN apk add git
+RUN apk add --no-cache git openssh
 
-ADD . /tmp/avakas
-ADD scripts/docker-entrypoint /usr/local/bin/docker-entrypoint
+COPY . /tmp/avakas
+COPY scripts/docker-entrypoint /usr/local/bin/docker-entrypoint
 
 RUN pip install --upgrade pip && pip install virtualenv && virtualenv /opt/avakas && \
     /opt/avakas/bin/pip install /tmp/avakas && \
