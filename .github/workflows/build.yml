@@ -63,9 +63,8 @@ jobs:
             eval `ssh-agent -t 300 -s`
             ssh-add - <<< "${{secrets.DEPLOY_KEY}}"
             ssh-keyscan github.com >> ~/.ssh/known_hosts
-            avakas bump . auto --branch=mainline --default-bump patch --flavor "git-native"
-            ./scripts/versiongen
-            git add setup.py
-            git commit -m "Bumping version to $(avakas show .)"
+            avakas bump . auto --branch=mainline --default-bump patch --flavor "pep621"
+            git add pyproject.toml
+            git commit -m "Bumping version to $(avakas show . --flavor pep621)"
             git push origin mainline
             ssh-agent -k

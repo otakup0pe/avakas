@@ -139,6 +139,25 @@ ansible_version() {
     tag_repo "$REPO" "$VSN"
 }
 
+pep621_version() {
+    local REPO="$1"
+    local VSN="$2"
+    FILE="${REPO}/pyproject.toml"
+    cat > "$FILE" <<TOML
+[project]
+name = "test-project"
+version = "${VSN}"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+TOML
+    cd "$REPO"
+    git add "$FILE"
+    git commit -qm "Bumping to ${VSN}" "$FILE"
+    tag_repo "$REPO" "$VSN"
+}
+
 cookbook_version() {
     local REPO="$1"
     local VSN="$2"
@@ -172,6 +191,8 @@ template_skeleton() {
         plain_version "$REPO" "$VSN"
     elif [ "$FLAVOR" == "ansible" ] ; then
         ansible_version "$REPO" "$VSN"
+    elif [ "$FLAVOR" == "pep621" ] ; then
+        pep621_version "$REPO" "$VSN"
     elif [ "$FLAVOR" == "cookbook" ] ; then
         cookbook_version "$REPO" "$VSN"
     else
