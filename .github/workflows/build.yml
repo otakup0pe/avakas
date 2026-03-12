@@ -70,10 +70,6 @@ jobs:
               echo "No version found, skipping release"
               exit 0
             fi
-            if ! git ls-remote --tags origin "$version" | grep -q "$version"; then
-              echo "Tag $version not found on remote, skipping release"
-              exit 0
-            fi
             if gh release view "$version" > /dev/null 2>&1; then
               echo "Release $version already exists, skipping"
               exit 0
