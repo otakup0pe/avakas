@@ -1,6 +1,6 @@
 [project]
 name = "avakas"
-version = "3.0.3"
+version = "3.0.4"
 description = "Interact with project version metadata"
 license = "MIT"
 authors = [
