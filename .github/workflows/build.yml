@@ -53,7 +53,7 @@ jobs:
           python-version: "3.12"
       - name: "dat env tho"
         run: "make testenv"
-      - name: "Maybe bump version"
+      - name: "Maybe bump and release"
         run: |
             git config user.email "sysop@eghetto.ca"
             git config user.name "An Automaton"
@@ -64,12 +64,8 @@ jobs:
             ssh-add - <<< "${{secrets.DEPLOY_KEY}}"
             ssh-keyscan github.com >> ~/.ssh/known_hosts
             avakas bump . auto --branch=mainline --default-bump patch --flavor "pep621"
-            ssh-agent -k
-      - name: "Maybe create release"
-        env:
-          GH_TOKEN: "${{ github.token }}"
-        run: |
             version=$(avakas show . --flavor "pep621")
+            ssh-agent -k
             if [ -z "$version" ]; then
               echo "No version found, skipping release"
               exit 0
@@ -84,3 +80,5 @@ jobs:
             fi
             echo "Creating release $version"
             gh release create "$version" --title "$version" --notes "Release $version"
+        env:
+          GH_TOKEN: "${{ github.token }}"
