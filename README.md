@@ -9,8 +9,7 @@ avakas
 This script provides a simple interface around viewing and
 manipulating project version metadata. It may be used to either bump,
 set, or view the version information for the project in a given
-directory. It is written with [semantic
-versioning](http://semver.org/) in mind.
+directory. It is written with [semantic versioning](http://semver.org/) in mind.
 
 It currently does it's best to determine whether the given directory
 contains a NodeJS, or Ansible project before just settling on keeping
@@ -31,7 +30,7 @@ The avakas tool supports the following types of version files
 * NodeJS `package.json`
 * Ansible `meta/main.yml`
 * Plain ol' `version` file
-
+* Python PEP-621 `pyproject.toml`
 
 # Operations
 
@@ -101,7 +100,6 @@ will be used. This is useful for CI/CD systems.
 ```shell
 $ avakas bump . auto --default-bump patch
 ```
-
 
 # Arguments
 
