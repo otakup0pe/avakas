@@ -18,7 +18,15 @@ fi
 
 ARGS="$*"
 if [ "$ACTION" = "bump" ] || [ "$ACTION" = "set" ] ; then
-    mkdir -p "${HOME}/.ssh"
+    # Ensure writable SSH config directory
+    SSH_DIR="${HOME}/.ssh"
+    mkdir -p "${SSH_DIR}" 2>/dev/null || {
+        # HOME may be unwritable (e.g., /root when running as non-root)
+        SSH_DIR="/tmp/.ssh"
+        mkdir -p "${SSH_DIR}"
+        export HOME="/tmp"
+    }
+
     if [ -z "$SSH_AUTH_SOCK" ] ; then
         if [ ! -e "$SSH_KEY" ] ; then
             problems "SSH private key not found"
@@ -28,9 +36,21 @@ if [ "$ACTION" = "bump" ] || [ "$ACTION" = "set" ] ; then
 	    fi
         fi
     fi
-    ssh-keyscan "$SSH_SCAN_HOST" 2> /dev/null 1> "${HOME}/.ssh/known_hosts" || problems "Unable to load git host key"
-    chmod -R og-rwx "${HOME}/.ssh"
+
+    if [ -n "$SSH_SCAN_HOST" ] ; then
+        ssh-keyscan "$SSH_SCAN_HOST" 2>/dev/null 1>"${SSH_DIR}/known_hosts" || problems "Unable to load git host key"
+    fi
+    chmod -R og-rwx "${SSH_DIR}" 2>/dev/null || true
+
+    # Tell SSH/git to use our known_hosts location explicitly.
+    # OpenSSH reads config from /etc/passwd home, not $HOME.
+    export GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=${SSH_DIR}/known_hosts"
 fi
+
+# Mark mounted directories as safe for git (ownership mismatch in containers).
+# Use --system so it lands in /etc/gitconfig, which git always reads
+# regardless of HOME or /etc/passwd mismatches.
+git config --system --add safe.directory '*'
 
 if [ -e "/etc/avakas/avakasrc" ] ; then
     # shellcheck disable=SC1091
