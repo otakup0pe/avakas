@@ -144,7 +144,8 @@ def cli_set_version(prerelease=False,
 
     version = kwargs['version'][0]
     project = detect_project_flavor(**kwargs)
-    original_version = project.version_obj
+    has_current_version = project.read()
+    original_version = project.version_obj if has_current_version else None
 
     project.version = version
     if prerelease:
@@ -155,6 +156,10 @@ def cli_set_version(prerelease=False,
         )
         project.make_prerelease(prerelease_version, build_date=prerelease_date)
     project = add_metadata(project, **kwargs)
+    if project.version_obj == original_version:
+        raise AvakasError(
+            "Attempted to set the version to its previous value!"
+        )
     project.write()
 
     print(f"Version set to {project.version}")

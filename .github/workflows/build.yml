@@ -1,7 +1,7 @@
 ---
 name: "build"
 
-on:
+"on":
   push:
     branches:
       - "mainline"
@@ -28,21 +28,21 @@ jobs:
           python-version: "${{ matrix.python-version }}"
       - name: "Config git"
         run: "git config init.defaultbranch mainline"
-      - name: "run tests"
+      - name: "Run tests"
         run: "make test"
-      - name: "build container"
+      - name: "Build package"
+        if: matrix.python-version == '3.12'
+        run: "make package"
+      - name: "Build container"
         if: matrix.python-version == '3.12'
         uses: "docker/build-push-action@v6"
         with:
           context: "."
           push: false
           tags: "otakup0pe/avakas:test"
-  maybe_bump:
-    if: ${{ github.ref == 'refs/heads/mainline' && github.event_name == 'push' && ! startsWith(github.event.head_commit.message, 'Version bumped to')}}
+
+  containers:
     runs-on: "ubuntu-latest"
-    permissions:
-      contents: write
-    needs: "test"
     steps:
       - uses: "actions/checkout@v4"
         with:
@@ -51,30 +51,57 @@ jobs:
         uses: "actions/setup-python@v5"
         with:
           python-version: "3.12"
-      - name: "dat env tho"
-        run: "make testenv"
+      - name: "Run container test matrix"
+        run: "make test_in_containers"
+
+  maybe_bump:
+    if: >-
+      ${{
+        github.ref == 'refs/heads/mainline' &&
+        github.event_name == 'push' &&
+        ! startsWith(github.event.head_commit.message, 'Version bumped to')
+      }}
+    runs-on: "ubuntu-latest"
+    permissions:
+      contents: write
+    needs: ["test", "containers"]
+    steps:
+      - uses: "actions/checkout@v4"
+        with:
+          fetch-depth: 0
+      - name: "Set up Python"
+        uses: "actions/setup-python@v5"
+        with:
+          python-version: "3.12"
+      - name: "Install Avakas from this checkout"
+        run: |
+          make testenv
+          make install
       - name: "Maybe bump and release"
         run: |
-            git config user.email "sysop@eghetto.ca"
-            git config user.name "An Automaton"
-            mkdir -p ~/.ssh/
-            make install
-            git remote set-url origin "$(git config --get remote.origin.url | sed 's#http.*com/#git@github.com:#g')"
-            eval `ssh-agent -t 300 -s`
-            ssh-add - <<< "${{secrets.DEPLOY_KEY}}"
-            ssh-keyscan github.com >> ~/.ssh/known_hosts
-            avakas bump . auto --branch=mainline --default-bump patch --flavor "pep621"
-            version=$(avakas show . --flavor "pep621")
-            ssh-agent -k
-            if [ -z "$version" ]; then
-              echo "No version found, skipping release"
-              exit 0
-            fi
-            if gh release view "$version" > /dev/null 2>&1; then
-              echo "Release $version already exists, skipping"
-              exit 0
-            fi
-            echo "Creating release $version"
-            gh release create "$version" --title "$version" --notes "Release $version"
+          git config user.email "sysop@eghetto.ca"
+          git config user.name "An Automaton"
+          mkdir -p ~/.ssh/
+          remote_url=$(git config --get remote.origin.url)
+          ssh_url=$(sed 's#http.*com/#git@github.com:#g' <<< "$remote_url")
+          git remote set-url origin "$ssh_url"
+          eval `ssh-agent -t 300 -s`
+          ssh-add - <<< "${{ secrets.DEPLOY_KEY }}"
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          avakas bump . auto --branch=mainline --flavor "pep621"
+          version=$(avakas show . --flavor "pep621")
+          ssh-agent -k
+          if [ -z "$version" ]; then
+            echo "No version found, skipping release"
+            exit 0
+          fi
+          if gh release view "$version" > /dev/null 2>&1; then
+            echo "Release $version already exists, skipping"
+            exit 0
+          fi
+          echo "Creating release $version"
+          gh release create "$version" \
+            --title "$version" \
+            --notes "Release $version. See CHANGELOG.md for details."
         env:
           GH_TOKEN: "${{ secrets.RELEASE_TOKEN }}"

@@ -28,7 +28,7 @@ def detect_project_flavor(**kwargs):
         else:
             matched_names = [f.PROJECT_TYPE for f in matched]
             flavors = ', '.join(matched_names)
-            raise AvakasError(f"Multiple project flavor matches: %{flavors}")
+            raise AvakasError(f"Multiple project flavor matches: {flavors}")
 
     else:
         if flavor in Avakas.project_flavors:
@@ -133,64 +133,42 @@ class Avakas():
 
         return True
 
+    def _get_extant_prerelease_versions(
+            self, prefix, base_version, extant_versions=None):
+        """Return numeric prereleases matching a prefix and base version."""
+        versions = set()
+        for version in extant_versions or ():
+            if version.truncate() != base_version.truncate():
+                continue
+            if version.prerelease[:len(prefix)] != prefix:
+                continue
+            if len(version.prerelease) <= len(prefix):
+                continue
+            try:
+                versions.add(int(version.prerelease[len(prefix)]))
+            except (TypeError, ValueError):
+                continue
+        return versions
+
     def get_next_prerelease_version(
             self, starting_version=None, prefix=None,
             new_version=None):
-        """
-        Return an integer representing the version of a given prerelase label
-        (i.e. alpha, beta, rc) which comes next.
-
-        if `starting_version` is not passed in, this will use `self`'s
-        version object as the starting version.
-        """
-
+        """Return the next numeric prerelease for a prefix and base."""
         if starting_version is None:
             starting_version = self._version
-
         if new_version is None:
             new_version = self._version
-
-        # This \/ checks whether last version was a pre-release, and then
-        # whether the beginning (at minimum) of the current pre-release
-        # prefix (PRP) matches the intended PRP. This could resolve to
-        # being `True` in the case that we're doing some sort of pre-pre
-        # release, e.g. rc.1.dev.1 would match an attempted 'rc' bump), but
-        # that's actually desirable (because bumping to the next 'rc'
-        # should treat `dev.1` as if it doesn't exist.
-        prerelease_len = 0
         if not prefix:
-            prefix = tuple()
-        if isinstance(prefix, str):
-            prefix = (prefix, )
+            prefix = ()
+        elif isinstance(prefix, str):
+            prefix = (prefix,)
 
-        prerelease_len = len(prefix)
-
-        current_prefix_match = starting_version.prerelease[:prerelease_len]
-
-        if (new_version == starting_version.truncate()
-                and prefix == current_prefix_match):
-
-            # prerelease bumping for the same release.
-            # this will catch a case where there's e.g. rc.dev.1
-            # and we're trying to bump the 'rc' prefix, in that
-            # case per semver, there is an implicit zero (i.e. .alpha comes
-            # before .alpha.1).
-            try:
-                prerelease_version = int(
-                    starting_version.prerelease[prerelease_len])
-
-            except (IndexError, TypeError):
-                # either there is no explicit prerelease version in the
-                # current version, or there are additional prerelease
-                # prefixes which are not intended for this bump
-                prerelease_version = 0
-        else:
-            # different release or different prefix
-            prerelease_version = 0
-
-        prerelease_version += 1
-
-        return prerelease_version
+        extant = self._get_extant_prerelease_versions(
+            prefix=prefix,
+            base_version=new_version,
+            extant_versions={starting_version},
+        )
+        return max(extant, default=0) + 1
 
     def make_prerelease(self, version, prefix=None, build_date=None):
         """

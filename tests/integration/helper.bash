@@ -1,7 +1,7 @@
 # -*- mode: Shell-script;bash -*-
 
 function shared_setup() {
-    # we do not want this during tests
+    # Keep CI metadata out of build-version fixtures.
     if [ -n "$GITHUB_RUN_ID" ] ; then
         unset GITHUB_RUN_ID
     fi
@@ -17,7 +17,7 @@ function shared_setup() {
         mkdir -p "$AVAKAS_TEST_DIR"
     fi
 
-    # hey git internal env vars
+    # Keep ambient Git state out of repository fixtures.
     unset GIT_AUTHOR_DATE
     unset GIT_AUTHOR_EMAIL
     unset GIT_AUTHOR_NAME
@@ -34,7 +34,7 @@ shared_teardown() {
 fake_file() {
     local DIR="$1"
     local FILE="${DIR}/mystery-${BATS_TEST_NAME}-${RANDOM}"
-    "${BATS_TEST_DIRNAME}/fake-file" "${FILE}"
+    "$AVAKAS_PYTHON" "${BATS_TEST_DIRNAME}/fake-file" "${FILE}"
     echo "$FILE"
 }
 
@@ -177,7 +177,7 @@ avakas_rc() {
     shift
     OWD="$(pwd)"
     cd "$CIDIR"
-    run coverage run -a --source "avakas" -m "avakas" $* 2> /dev/null
+    run "$AVAKAS_PYTHON" -m coverage run -a --source "avakas" -m "avakas" "$@" 2> /dev/null
     cd "$OWD"
     echo "$output"
     [ "$status" -eq "$RC" ]
@@ -219,5 +219,7 @@ commit_message() {
     cd $REPO
     echo "some kinda ${RANDOM}" > "foo"
     git add "foo"
-    git commit -qm "$MSG" "foo"
+    local FORMATTED_MSG
+    printf -v FORMATTED_MSG '%b' "$MSG"
+    git commit -qm "$FORMATTED_MSG" "foo"
 }

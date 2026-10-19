@@ -32,6 +32,16 @@ teardown() {
     [ "$output" == "0.0.2" ]
 }
 
+@test "reject an unchanged pep621 version without mutation" {
+    local before
+    before=$(git -C "$REPO" rev-parse HEAD)
+
+    avakas_rc 1 set "$REPO" "0.0.1"
+    scan_lines "Attempted to set the version to its previous value" "${lines[@]}"
+    [ "$before" == "$(git -C "$REPO" rev-parse HEAD)" ]
+    git -C "$REPO" diff --quiet
+}
+
 @test "bump a pep621 version - patch" {
     avakas_wrapper bump "$REPO" patch
     scan_lines "Version updated from 0.0.1 to 0.0.2" "${lines[@]}"
