@@ -31,7 +31,7 @@ teardown() {
     scan_lines "Version set to v0.0.2" "${lines[@]}"
     avakas_wrapper show "$REPO" --tag-prefix "v"
     scan_lines "v0.0.2" "${lines[@]}"
-    [ -e "$REPO/version" ]
+    [ ! -e "$REPO/version" ]
 }
 
 @test "bump an ansible version" {
@@ -39,7 +39,7 @@ teardown() {
     scan_lines "Version updated from v0.0.1 to v0.0.2" "${lines[@]}"
     avakas_wrapper show "$REPO" --tag-prefix "v"
     scan_lines "v0.0.2" "${lines[@]}"
-    [ -e "$REPO/version" ]
+    [ ! -e "$REPO/version" ]
 }
 
 @test "do not allow the setting of a prefix" {

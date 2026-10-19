@@ -3,14 +3,23 @@ Avakas Built-In Base Project Flavor
 """
 
 import os
-import re
 import sys
 
 from git import Repo
+from git.remote import PushInfo
 
 from avakas.errors import AvakasError
 from avakas.avakas import Avakas, register_flavor
+from avakas.bump_markers import highest_bump
 from avakas.utils import stdout_redirect
+
+
+PUSH_FAILURES = (
+    PushInfo.ERROR
+    | PushInfo.REJECTED
+    | PushInfo.REMOTE_REJECTED
+    | PushInfo.REMOTE_FAILURE
+)
 
 
 @register_flavor('legacy')
@@ -28,7 +37,6 @@ class AvakasLegacy(Avakas):
         return a true value.
         """
         os.path.exists(directory)
-        # For legacy, this should _ALWAYS_ return False
         return False
 
     def __init__(self, **kwargs):
@@ -55,23 +63,25 @@ class AvakasLegacy(Avakas):
         if opt['remote'] not in [r.name for r in repo.remotes]:
             raise AvakasError(f"Remote {opt['remote']} not found")
 
-        # we really do not want to be polluting our stdout when
-        # showing the version
+        # Keep version output machine-readable.
         with stdout_redirect():
             repo.remotes[opt['remote']].pull(refspec=opt['branch'])
 
         return repo
 
     def __git_push(self, tag=None):
-        """Push git commit or tag to remote"""
-        opt = self.options
+        """Push git commit or tag to remote."""
+        remote = self.repo.remotes[self.options['remote']]
+        responses = []
         if tag:
-            resp = self.repo.remotes[opt['remote']].push(tag)
+            responses.extend(remote.push(tag))
+        responses.extend(remote.push())
 
-        resp = self.repo.remotes[opt['remote']].push()
-        resp = resp[0]
-        if resp.flags & 1024 or resp.flags & 32 or resp.flags & 16:
-            raise AvakasError("Unexpected git error: {resp.summary}")
+        for response in responses:
+            if response.flags & PUSH_FAILURES:
+                raise AvakasError(
+                    f"Unexpected git error: {response.summary}"
+                )
 
     def __commit_files(self):
         """Will commit and push the version file and optionally tags."""
@@ -94,26 +104,13 @@ class AvakasLegacy(Avakas):
         and look for hints that we want to "automatically" bump
         our version"""
         self.repo = self.__load_git()
-        vsn = None
-        reg = re.compile(r'(\#|bump:|\[)(?P<bump>(patch|minor|major))(.*|\])',
-                         re.MULTILINE)
+        messages = []
         for commit in self.repo.iter_commits(self.options['branch']):
-            # we go iterate back to the last time we bumped the version
             if commit.message.startswith('Version bumped to'):
                 break
+            messages.append(commit.message)
 
-            res = reg.search(commit.message)
-            if res:
-                bump = res.group('bump')
-                if not vsn:
-                    vsn = bump
-                elif vsn == 'patch' and bump == 'minor':
-                    vsn = 'minor'
-                elif vsn == 'patch' and bump == 'major':
-                    vsn = 'major'
-                elif vsn == 'minor' and bump == 'major':
-                    vsn = 'major'
-        return vsn
+        return highest_bump(messages)
 
     def check_if_dirty(self):
         """Check if the repo is dirty"""
@@ -169,6 +166,9 @@ class AvakasLegacy(Avakas):
         Get the version from the current project flavor
         """
         path = os.path.join(self.directory, self.version_filename)
+        if not os.path.exists(path):
+            return False
+
         with open(path, 'r', encoding='utf8') as version_file:
             version_str = version_file.read()
             self.version = version_str

@@ -11,7 +11,7 @@ manipulating project version metadata. It may be used to either bump,
 set, or view the version information for the project in a given
 directory. It is written with [semantic versioning](http://semver.org/) in mind.
 
-It currently does it's best to determine whether the given directory
+It currently does its best to determine whether the given directory
 contains a NodeJS, or Ansible project before just settling on keeping
 the version in a file named `version`. If a NodeJS project is
 discovered then the `package.json` will be edited. If an Ansible
@@ -31,6 +31,7 @@ The avakas tool supports the following types of version files
 * Ansible `meta/main.yml`
 * Plain ol' `version` file
 * Python PEP-621 `pyproject.toml`
+* Git tags (`git-tag`; `git-native` remains a compatibility alias)
 
 # Operations
 
@@ -72,17 +73,15 @@ provided. It has four modes of operation.
 * `major` will update the major (left) version component.
 * `minor` will update the minor (middle) version component.
 * `patch` will update the patch (right) version component.
-* `pre` will update the prerelease (to the right, separated by a `-`)
-* `auto` will attempt to determine which component to adjust
+* `auto` will attempt to determine which component to adjust.
 
 ### Autobump
 
-When the `auto` option is selected, the system will use hints in the
-git log since the last version bump to determine if the version should
-be changed. These hints can be specified at any point in the commit
-message. The hints are specified, prefixed by `bump:`. For example,
-the following commit message would result in a minor version bump if
-it is subsequently "autobumped".
+When the `auto` option is selected, Avakas uses explicit hints in the
+git log since the last version bump. It accepts `#minor`, `bump:minor`,
+`bump: minor`, and `[minor]`, with `patch`, `minor`, or `major` as the
+level. Markers are case-insensitive and must be complete tokens. If several
+markers are present, the highest level wins.
 
 ```shell
 $ avakas show .
@@ -94,7 +93,7 @@ Version updated from 0.0.1 to 0.1.0
 
 Avakas can also rely on a default bump version to ensure every
 invocation of Avakas generates a bump build. If a bump hint is not
-detected within the commit history, the defined defualt-bump level
+detected within the commit history, the defined default-bump level
 will be used. This is useful for CI/CD systems.
 
 ```shell
@@ -123,7 +122,8 @@ The filename to use for generating a version file.
 
 ## --flavor
 
-Flavor of project (Presently: legacy|ansible|nodejs).
+Project flavor. Supported values include `legacy`, `git-tag`,
+`git-native` (compatibility alias), `ansible`, `node`, and `pep621`.
 
 ## --build-meta
 
@@ -143,7 +143,7 @@ Run git hooks during operations.
 
 ## --dry-run
 
-Will not push to git.
+Skips commits, tags, and pushes. Version files may still be modified.
 
 ## --prerelease
 
@@ -162,8 +162,9 @@ Will use a prefix for the prerelease. (Example: `1.0.0-alpha.1`)
 
 You can use `avakas` as a Docker container as well. It supports either static
 SSH keys or the SSH Agent. It seems like the SSH agent only works on Linux
-though. The Docker entrypoint should setup your SSH environment on the `set` and
-`bump` `avakas` actions.
+though. The Docker entrypoint sets up SSH for the `set` and `bump` actions. Set
+`SSH_SCAN_HOST` to the Git host to trust, or to an empty value when host-key
+scanning is not needed. The image also supports an arbitrary non-root user.
 
 You can map a folder to `/etc/avakas` for static SSH or Git environment
 configuration. If the file `avakasrc` is present in `/etc/avakas` it will be
@@ -193,15 +194,19 @@ $ docker run  -v $(pwd):/app -v /tmp/ssh-avakas-working:/etc/avakas otakup0pe/av
 
 ## Local Testing
 
-`make test_in_containers` will run all integration tests against all supported
-minor versions of Python. It does not currently run any style or lint tests, and
-the coverage report it generates points to an absolute path on the container
-(`/src/`) and is therefore not terribly useful, but it does run all of the
-integration tests (the other tests and output are planned to be added).
+`make test_in_containers` runs the unit and integration suites against all
+supported minor versions of Python, then exercises the published container
+entrypoint as an arbitrary non-root user. It does not run style or lint checks,
+and its coverage paths refer to the container filesystem.
 
-`make test` will work to run tests against whatever version of Python
-is `python3` on your host. It also runs style and lint checks, and
-generates a coverage report from the integration tests.
+`make test` runs unit and integration tests against whatever version of
+Python is `python3` on your host. It also runs style and lint checks and
+generates a coverage report.
+
+## Releasing
+
+Maintainers should follow [the release runbook](docs/releasing.md). Published
+changes are recorded in the [changelog](CHANGELOG.md).
 
 # License
 

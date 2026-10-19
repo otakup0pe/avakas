@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+IMAGE="avakas-entrypoint-test"
+REPO=$(mktemp -d)
+trap 'rm -rf "$REPO"' EXIT
+
+git -C "$REPO" init -q -b mainline
+git -C "$REPO" config user.email "nobody@example.com"
+git -C "$REPO" config user.name "Avakas tests"
+printf 'fixture\n' > "$REPO/fixture"
+git -C "$REPO" add fixture
+git -C "$REPO" commit -qm "Initial release"
+git -C "$REPO" tag 0.0.1
+chmod -R a+rX "$REPO"
+
+docker build --tag "$IMAGE" .
+docker run --rm \
+    --user 65534:65534 \
+    --env HOME=/unwritable \
+    --env SSH_AUTH_SOCK=/tmp/forwarded-agent \
+    --env SSH_SCAN_HOST= \
+    --volume "$REPO:/work" \
+    "$IMAGE" set /work 0.0.2 --flavor git-tag --dry-run

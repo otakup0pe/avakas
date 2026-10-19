@@ -2,35 +2,34 @@
 Avakas Built-In Base Project Flavor
 """
 
-import re
 import os
 
 from git import Repo
+from git.remote import PushInfo
 
 import semantic_version
 
 from avakas.errors import AvakasError
 from avakas.avakas import Avakas, register_flavor
+from avakas.bump_markers import highest_bump
 
-PATCH = 'patch'
-MAJOR = 'major'
-MINOR = 'minor'
 
-# not gonna convert everything to be an enum just yet -TMJ
-BUMPS = {
-    PATCH: 0,
-    MINOR: 1,
-    MAJOR: 2
-}
+PUSH_FAILURES = (
+    PushInfo.ERROR
+    | PushInfo.REJECTED
+    | PushInfo.REMOTE_REJECTED
+    | PushInfo.REMOTE_FAILURE
+)
 
 
 @register_flavor('git-native')
+@register_flavor('git-tag')
 class AvakasGitNative(Avakas):
     """
     Avakas Git Native - using tags only
     Similar to thorscmversion
     """
-    PROJECT_TYPE = 'git-native'
+    PROJECT_TYPE = 'git-tag'
 
     @classmethod
     def guess_flavor(cls, directory):
@@ -42,7 +41,6 @@ class AvakasGitNative(Avakas):
         return False
 
     def __init__(self, filename, tag_prefix='v', **kwargs):
-        # not sure if setting tag_prefix to ! None is too prescriptive
         super().__init__(**kwargs)
         self.tag_prefix = tag_prefix
         self.version_filename = filename
@@ -74,65 +72,63 @@ class AvakasGitNative(Avakas):
             remote = self.repo.remote(name=opt['remote'])
             resp = remote.push(tag)[0]
 
-        if resp.flags & 1024 or resp.flags & 32 or resp.flags & 16:
+        if resp.flags & PUSH_FAILURES:
             raise AvakasError(f"Unexpected git error: {resp.summary}")
 
     def __create_git_tag(self):
         """Creates a git tag"""
         return self.repo.create_tag(self.version)
 
+    def _get_extant_prerelease_versions(
+            self, prefix, base_version, extant_versions=None):
+        """Include prerelease tags from every branch in allocation."""
+        versions = set(extant_versions or ())
+        versions.update(
+            version
+            for version in (
+                self._version_from_tag(tag) for tag in self.repo.tags
+            )
+            if version is not None
+        )
+        return super()._get_extant_prerelease_versions(
+            prefix=prefix,
+            base_version=base_version,
+            extant_versions=versions,
+        )
+
     def __determine_bump(self, for_prerelease=False):
         """Will go through the Git history until the last version bump
         and look for hints that we want to "automatically" bump
         our version"""
         self.repo = self.__load_git()
-        vsn = None
-        reg = re.compile(r'(\#|bump:|\[)(?P<bump>(patch|minor|major))(.*|\])',
-                         re.MULTILINE)
         tagged_commits = {}
         for tag in self.repo.tags:
             tagged_commits.setdefault(tag.commit, set()).add(tag)
 
-        # the most recent tag, whether pre-release or no
-        tag_version = None
-        release_version = None
-        bump = None
-        head_commit = self.repo.heads[self.options['branch']].commit
+        messages = []
+        head_commit = self.repo.head.commit
 
-        for commit in self.repo.iter_commits(self.options['branch']):
-            # we go iterate back to the last time we bumped the version
+        for commit in self.repo.iter_commits("HEAD"):
             if commit in tagged_commits:
-                version_tags = [self._version_from_tag(tag) for tag in
-                                tagged_commits[commit]]
+                version_tags = [
+                    self._version_from_tag(tag)
+                    for tag in tagged_commits[commit]
+                ]
+                version_tags = [
+                    tag for tag in version_tags if tag is not None
+                ]
+                release_tags = [
+                    tag for tag in version_tags if not tag.prerelease
+                ]
 
-                version_tags = [tag for tag in version_tags if tag is not None]
+                if release_tags:
+                    break
+                if version_tags and for_prerelease and commit == head_commit:
+                    return None
 
-                release_tags = [tag for tag in version_tags if
-                                not tag.prerelease]
+            messages.append(commit.message)
 
-                if any(release_tags):
-                    release_version = max(release_tags)
-                if any(version_tags) and tag_version is None:
-                    tag_version = max(version_tags)
-
-                    if for_prerelease and commit == head_commit:
-                        return bump
-
-            if release_version is not None:
-                break  # break out of for commit iterator
-
-            res = reg.search(commit.message)
-            if res:
-                bump = res.group('bump')
-                if not vsn:
-                    vsn = bump
-                else:
-                    vsn = max((vsn, bump), key=lambda x: BUMPS[x])
-
-            if release_version is not None:
-                break
-
-        return vsn
+        return highest_bump(messages)
 
     def write_versionfile(self):
         """Write the version file"""
@@ -180,7 +176,7 @@ class AvakasGitNative(Avakas):
         for tag in self.repo.tags:
             commit_to_tags.setdefault(tag.commit, set()).add(tag)
 
-        for commit in self.repo.iter_commits(self.options['branch']):
+        for commit in self.repo.iter_commits("HEAD"):
             if commit in commit_to_tags:
                 version_tags = [self._version_from_tag(tag) for tag in
                                 commit_to_tags[commit]]
@@ -192,11 +188,9 @@ class AvakasGitNative(Avakas):
                 break
 
         if latest_tag is None:
-            raise AvakasError("No initial tag found!")
+            return False
 
         self.version = latest_tag
-        self.write_versionfile()
-
         return self.version
 
     def write(self):

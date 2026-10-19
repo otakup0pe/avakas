@@ -1,3 +1,11 @@
-.ci-env
 .bats
+.bats-git
+.ci-env
+.coverage
 .git
+.tox
+__pycache__
+*.egg-info
+*.py[cod]
+build
+dist
