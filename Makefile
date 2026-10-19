@@ -52,7 +52,7 @@ test: lint-secrets testenv install
 	test -z $(TRAVIS) && $(CI_ENV)coverage erase || true
 
 generate_testing_artifact: testenv
-	$(CI_ENV)tox --sdistonly
+	$(CI_ENV)python -m build --sdist
 
 test_in_container_312: generate_testing_artifact
 	docker run -u nobody -v "$(HERE):/src" python:3.12 sh -c '$(SETUP_CONTAINER_FOR_TESTS) && PYTHONPATH=/tmp/avakas/.ci-env /tmp/avakas/.ci-env/bin/tox -e py312'
