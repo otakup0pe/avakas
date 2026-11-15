@@ -158,6 +158,28 @@ TOML
     tag_repo "$REPO" "$VSN"
 }
 
+erlang_version() {
+    local REPO="$1"
+    local VSN="$2"
+    mkdir -p "${REPO}/src"
+    FILE="${REPO}/src/test_project.app.src"
+    cat > "$FILE" <<APPSRC
+{application, test_project, [
+    {description, "Test project"},
+    %% {vsn, "0.0.0"} was here before avakas owned it
+    {vsn, "${VSN}"},
+    {registered, []},
+    {applications, [kernel, stdlib]},
+    {env, []},
+    {modules, []}
+]}.
+APPSRC
+    cd "$REPO"
+    git add "$FILE"
+    git commit -qm "Bumping to ${VSN}" "$FILE"
+    tag_repo "$REPO" "$VSN"
+}
+
 cookbook_version() {
     local REPO="$1"
     local VSN="$2"
@@ -193,6 +215,8 @@ template_skeleton() {
         ansible_version "$REPO" "$VSN"
     elif [ "$FLAVOR" == "pep621" ] ; then
         pep621_version "$REPO" "$VSN"
+    elif [ "$FLAVOR" == "erlang" ] ; then
+        erlang_version "$REPO" "$VSN"
     elif [ "$FLAVOR" == "cookbook" ] ; then
         cookbook_version "$REPO" "$VSN"
     else
