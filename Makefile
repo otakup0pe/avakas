@@ -1,12 +1,15 @@
 .PHONY: all testenv install package test test_unit test_integration \
 	test_in_containers test_in_container_312 test_in_container_310 \
 	test_container_entrypoint generate_testing_artifact lint-secrets \
-	clean distclean container
+	lint-secrets-staged clean distclean container
 
 HERE := $(shell pwd)
 GITLEAKS_IMAGE ?= ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
 GITLEAKS_MODE ?= git
 GITLEAKS_SOURCE ?= .
+# `git` mode reads COMMITS, so it cannot see staged-but-uncommitted content.
+# lint-secrets-staged overrides this with the documented staged invocation.
+GITLEAKS_FLAGS ?=
 
 SETUP_CONTAINER_FOR_TESTS := mkdir -p /tmp/avakas && \
 	tar -c --exclude=.git --exclude=.ci-env --exclude='.bats*' -C /src . | tar -x -C /tmp/avakas && \
@@ -42,7 +45,7 @@ test_unit: testenv install
 test_integration: testenv install
 	AVAKAS_PYTHON="$(CI_ENV)python" ./scripts/integration $(TEST)
 
-test: lint-secrets testenv install
+test: testenv install
 	$(CI_ENV)coverage erase
 	$(CI_ENV)pycodestyle "avakas"
 	$(CI_ENV)pylint "avakas"
@@ -75,7 +78,10 @@ lint-secrets:
 		--tmpfs /tmp:rw,noexec,nosuid,size=16m \
 		-v "$(HERE):/repo:ro" \
 		-w /repo \
-		$(GITLEAKS_IMAGE) $(GITLEAKS_MODE) $(GITLEAKS_SOURCE) --redact --no-banner --verbose
+		$(GITLEAKS_IMAGE) $(GITLEAKS_MODE) $(GITLEAKS_SOURCE) $(GITLEAKS_FLAGS) --redact --no-banner --verbose
+
+lint-secrets-staged: GITLEAKS_FLAGS := --pre-commit --staged
+lint-secrets-staged: lint-secrets
 
 clean:
 	rm -rf .bats-git .bats .ci-env avakas.egg-info dist build .coverage .tox

@@ -19,7 +19,7 @@ jobs:
       matrix:
         python-version: ["3.10", "3.12"]
     steps:
-      - uses: "actions/checkout@v4"
+      - uses: "actions/checkout@11d5960a326750d5838078e36cf38b85af677262"  # v4.4.0
         with:
           fetch-depth: 0
       - name: "Set up Python ${{ matrix.python-version }}"
@@ -44,7 +44,7 @@ jobs:
   containers:
     runs-on: "ubuntu-latest"
     steps:
-      - uses: "actions/checkout@v4"
+      - uses: "actions/checkout@11d5960a326750d5838078e36cf38b85af677262"  # v4.4.0
         with:
           fetch-depth: 0
       - name: "Set up Python"
@@ -53,6 +53,15 @@ jobs:
           python-version: "3.12"
       - name: "Run container test matrix"
         run: "make test_in_containers"
+
+  secrets:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "actions/checkout@11d5960a326750d5838078e36cf38b85af677262"  # v4.4.0
+        with:
+          fetch-depth: 0
+      - name: "Scan full history with Gitleaks"
+        run: "make lint-secrets"
 
   maybe_bump:
     if: >-
@@ -64,9 +73,9 @@ jobs:
     runs-on: "ubuntu-latest"
     permissions:
       contents: write
-    needs: ["test", "containers"]
+    needs: ["test", "containers", "secrets"]
     steps:
-      - uses: "actions/checkout@v4"
+      - uses: "actions/checkout@11d5960a326750d5838078e36cf38b85af677262"  # v4.4.0
         with:
           fetch-depth: 0
       - name: "Set up Python"
